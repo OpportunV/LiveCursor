@@ -1,14 +1,13 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using static Opportunv.LiveCursor.Editor.CursorSetDefinitionValidator;
 
 namespace Opportunv.LiveCursor.Editor
 {
     internal sealed class CursorSetBaker
     {
         public List<Texture2D> Textures { get; } = new();
-
-        private const int PixelTolerance = 2;
 
         private readonly ICursorFrameLoader _loader;
         private readonly CursorImportReport _report;
@@ -29,7 +28,7 @@ namespace Opportunv.LiveCursor.Editor
             set.Initialize(Array.Empty<int>(), Array.Empty<Vector2>(), Array.Empty<CursorState>(),
                 Array.Empty<CursorTransition>());
 
-            if (!ValidateDefinition(definition))
+            if (!CursorSetDefinitionValidator.Validate(definition, _report))
             {
                 return set;
             }
@@ -81,108 +80,6 @@ namespace Opportunv.LiveCursor.Editor
 
             set.Initialize(_sizes, hotspots, states, bakedTransitions);
             return set;
-        }
-
-        private bool ValidateDefinition(CursorSetDefinition definition)
-        {
-            if (definition == null)
-            {
-                _report.Error("The cursor set definition is empty or not valid JSON.");
-                return false;
-            }
-
-            if (definition.sizes is not { Length: > 0 })
-            {
-                _report.Error("'sizes' must list at least one cursor size, for example [32, 48, 64].");
-            }
-            else
-            {
-                HashSet<int> seen = new();
-                foreach (var size in definition.sizes)
-                {
-                    if (size <= 0)
-                    {
-                        _report.Error($"Size {size} must be positive.");
-                    }
-                    else if (!seen.Add(size))
-                    {
-                        _report.Error($"Size {size} is listed twice.");
-                    }
-                }
-            }
-
-            if (definition.hotspot is not { Length: 2 })
-            {
-                _report.Error("'hotspot' must be [x, y] in source pixels from the top-left corner.");
-            }
-
-            if (definition.states is not { Length: > 0 })
-            {
-                _report.Error("'states' must define at least one state.");
-                return false;
-            }
-
-            HashSet<string> names = new(StringComparer.Ordinal);
-            foreach (var state in definition.states)
-            {
-                if (string.IsNullOrEmpty(state.name))
-                {
-                    _report.Error("Every state needs a 'name'.");
-                    continue;
-                }
-
-                if (!names.Add(state.name))
-                {
-                    _report.Error($"State '{state.name}' is defined twice.");
-                }
-
-                if (state.frameDurationMs <= 0f)
-                {
-                    _report.Error($"{StateLabel(state)}: 'frameDurationMs' must be positive.");
-                }
-
-                if (state.loopDelayMs < 0f)
-                {
-                    _report.Error($"{StateLabel(state)}: 'loopDelayMs' cannot be negative.");
-                }
-            }
-
-            HashSet<string> pairs = new(StringComparer.Ordinal);
-            foreach (var transition in definition.transitions ?? Array.Empty<CursorTransitionDefinition>())
-            {
-                var label = TransitionLabel(transition);
-                if (!names.Contains(transition.from ?? string.Empty))
-                {
-                    _report.Error($"{label}: unknown state '{transition.from}'.");
-                }
-
-                if (!names.Contains(transition.to ?? string.Empty))
-                {
-                    _report.Error($"{label}: unknown state '{transition.to}'.");
-                }
-
-                if (transition.from == transition.to)
-                {
-                    _report.Error($"{label}: 'from' and 'to' must differ.");
-                }
-
-                if (!pairs.Add($"{transition.from}>{transition.to}"))
-                {
-                    _report.Error($"{label} is defined twice.");
-                }
-
-                if (transition.frameDurationMs <= 0f)
-                {
-                    _report.Error($"{label}: 'frameDurationMs' must be positive.");
-                }
-
-                if (transition.reverseFrameDurationMs < 0f)
-                {
-                    _report.Error($"{label}: 'reverseFrameDurationMs' cannot be negative.");
-                }
-            }
-
-            return !_report.HasErrors;
         }
 
         private List<Texture2D> Load(CursorFramesDefinition frames, string label)
@@ -271,14 +168,14 @@ namespace Opportunv.LiveCursor.Editor
 
                 var from = stateFrames[IndexOfState(definition, transition.from)][0];
                 var to = stateFrames[IndexOfState(definition, transition.to)][0];
-                var startDifference = CountDifferentPixels(frames[0], from);
+                var startDifference = CursorPixelComparer.CountDifferentPixels(frames[0], from);
                 if (startDifference > 0)
                 {
                     _report.Warning(
                         $"{TransitionLabel(transition)}: first frame differs from '{transition.from}' frame 0 in {startDifference} pixels; the cursor will jump when the transition starts.");
                 }
 
-                var endDifference = CountDifferentPixels(frames[^1], to);
+                var endDifference = CursorPixelComparer.CountDifferentPixels(frames[^1], to);
                 if (endDifference > 0)
                 {
                     _report.Warning(
@@ -325,30 +222,6 @@ namespace Opportunv.LiveCursor.Editor
             return new(x, y);
         }
 
-        private static int CountDifferentPixels(Texture2D left, Texture2D right)
-        {
-            var a = left.GetPixels32();
-            var b = right.GetPixels32();
-            var count = 0;
-            for (var i = 0; i < a.Length; i++)
-            {
-                var p = a[i];
-                var q = b[i];
-                if (p.a == 0 && q.a == 0)
-                {
-                    continue;
-                }
-
-                if (Math.Abs(p.r - q.r) > PixelTolerance || Math.Abs(p.g - q.g) > PixelTolerance ||
-                    Math.Abs(p.b - q.b) > PixelTolerance || Math.Abs(p.a - q.a) > PixelTolerance)
-                {
-                    count++;
-                }
-            }
-
-            return count;
-        }
-
         private static int IndexOfState(CursorSetDefinition definition, string name)
         {
             for (var i = 0; i < definition.states.Length; i++)
@@ -360,16 +233,6 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             return -1;
-        }
-
-        private static string StateLabel(CursorStateDefinition state)
-        {
-            return $"State '{state.name}'";
-        }
-
-        private static string TransitionLabel(CursorTransitionDefinition transition)
-        {
-            return $"Transition '{transition.from}' -> '{transition.to}'";
         }
     }
 }

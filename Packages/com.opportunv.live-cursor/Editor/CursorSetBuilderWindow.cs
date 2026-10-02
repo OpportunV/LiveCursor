@@ -1,0 +1,722 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.UIElements;
+using Object = UnityEngine.Object;
+
+namespace Opportunv.LiveCursor.Editor
+{
+    internal sealed class CursorSetBuilderWindow : EditorWindow
+    {
+        [SerializeField] private string _sourceFolder;
+        [SerializeField] private string _definitionPath;
+
+        private const float PreviewSize = 256f;
+        private const float NumberWidth = 64f;
+        private const float StateNameWidth = 150f;
+        private const float StateDropdownWidth = 130f;
+        private const int MaxMessages = 30;
+
+        private static readonly Color _mutedText = new(0.6f, 0.6f, 0.6f);
+        private static readonly Color _previewBackground = new(0.16f, 0.16f, 0.16f);
+
+        private CursorBuilderModel _model;
+        private Texture2D _previewTexture;
+        private int _previewZoom = 1;
+        private ScrollView _content;
+        private VisualElement _messages;
+        private VisualElement _transitionsContainer;
+        private VisualElement _previewFrame;
+        private Image _previewImage;
+        private VisualElement _hotspotMarker;
+        private IntegerField _hotspotX;
+        private IntegerField _hotspotY;
+        private Button _createButton;
+
+        public static void OpenForFolder(string folder)
+        {
+            var window = Open();
+            window._sourceFolder = folder;
+            window._definitionPath = FindExistingDefinition(folder);
+            window.Reload();
+        }
+
+        public static void OpenForDefinition(string definitionPath)
+        {
+            var window = Open();
+            window._definitionPath = definitionPath;
+            window._sourceFolder = Path.GetDirectoryName(definitionPath)?.Replace('\\', '/');
+            window.Reload();
+        }
+
+        private static CursorSetBuilderWindow Open()
+        {
+            var window = GetWindow<CursorSetBuilderWindow>("Cursor Set Builder");
+            window.minSize = new(760f, 480f);
+            return window;
+        }
+
+        private static string FindExistingDefinition(string folder)
+        {
+            if (string.IsNullOrEmpty(folder) || !Directory.Exists(folder))
+            {
+                return null;
+            }
+
+            var files = Directory.GetFiles(folder, $"*.{CursorSetImporter.Extension}", SearchOption.TopDirectoryOnly);
+            return files.Length == 1 ? files[0].Replace('\\', '/') : null;
+        }
+
+        private void CreateGUI()
+        {
+            Reload();
+        }
+
+        private void OnDisable()
+        {
+            DestroyPreview();
+        }
+
+        private void Reload()
+        {
+            if (rootVisualElement == null)
+            {
+                return;
+            }
+
+            _model = null;
+            if (!string.IsNullOrEmpty(_definitionPath) && File.Exists(_definitionPath))
+            {
+                _model = CursorBuilderModel.FromDefinitionFile(_definitionPath);
+            }
+            else if (!string.IsNullOrEmpty(_sourceFolder) && Directory.Exists(_sourceFolder) &&
+                     _sourceFolder != "Assets")
+            {
+                _model = CursorBuilderModel.FromFolder(_sourceFolder);
+            }
+
+            Rebuild();
+        }
+
+        private void Rebuild()
+        {
+            rootVisualElement.Clear();
+            _content = new();
+            _content.style.paddingLeft = 8f;
+            _content.style.paddingRight = 8f;
+            _content.style.paddingTop = 6f;
+            _content.style.paddingBottom = 8f;
+            rootVisualElement.Add(_content);
+
+            BuildSource();
+            if (_model == null)
+            {
+                _content.Add(new HelpBox(
+                    "Choose a folder that contains the cursor frames. Every subfolder with PNG files becomes a state or, when it is named like 'DefaultToGrab', a transition.",
+                    HelpBoxMessageType.Info));
+                return;
+            }
+
+            BuildOutput();
+            BuildHotspot();
+            BuildStates();
+            _transitionsContainer = new();
+            _content.Add(_transitionsContainer);
+            BuildTransitions();
+            BuildCode();
+
+            _messages = new();
+            _messages.style.marginTop = 8f;
+            _content.Add(_messages);
+
+            _createButton = new(Create);
+            _createButton.style.height = 28f;
+            _createButton.style.marginTop = 6f;
+            _content.Add(_createButton);
+
+            RefreshPreview();
+            RefreshMessages();
+        }
+
+        private void BuildSource()
+        {
+            var row = Row();
+            var label = new Label("Source folder");
+            label.style.width = 110f;
+            row.Add(label);
+
+            TextField field = new() { value = _sourceFolder ?? string.Empty, isReadOnly = true };
+            field.style.flexGrow = 1f;
+            row.Add(field);
+
+            row.Add(new Button(BrowseFolder) { text = "Browse…" });
+            Button rescan = new(Reload) { text = "Rescan" };
+            rescan.SetEnabled(_model != null);
+            row.Add(rescan);
+            _content.Add(row);
+        }
+
+        private void BuildOutput()
+        {
+            var section = Section("Output");
+
+            TextField output = new("Cursor set file") { value = _model.OutputPath };
+            output.RegisterValueChangedCallback(evt =>
+            {
+                _model.OutputPath = evt.newValue.Replace('\\', '/');
+                RefreshMessages();
+            });
+            section.Add(output);
+
+            TextField sizes = new("Sizes (px)") { value = string.Join(", ", _model.Sizes) };
+            sizes.tooltip = "Square sizes to bake. At runtime the smallest size covering the system cursor is used.";
+            sizes.RegisterValueChangedCallback(evt =>
+            {
+                ParseSizes(evt.newValue);
+                RefreshMessages();
+            });
+            section.Add(sizes);
+        }
+
+        private void BuildHotspot()
+        {
+            var section = Section("Hotspot");
+            var row = Row();
+            row.style.alignItems = Align.FlexStart;
+
+            _previewFrame = new();
+            _previewFrame.style.backgroundColor = _previewBackground;
+            _previewFrame.style.marginRight = 10f;
+            _previewImage = new() { scaleMode = ScaleMode.StretchToFill };
+            _previewImage.RegisterCallback<PointerDownEvent>(evt => SetHotspotFromPointer(evt.localPosition));
+            _previewImage.RegisterCallback<PointerMoveEvent>(evt =>
+            {
+                if ((evt.pressedButtons & 1) != 0)
+                {
+                    SetHotspotFromPointer(evt.localPosition);
+                }
+            });
+            _previewFrame.Add(_previewImage);
+
+            _hotspotMarker = new() { pickingMode = PickingMode.Ignore };
+            _hotspotMarker.style.position = Position.Absolute;
+            SetBorder(_hotspotMarker, Color.red, 1f);
+            _previewFrame.Add(_hotspotMarker);
+            row.Add(_previewFrame);
+
+            VisualElement fields = new();
+            _hotspotX = new("X") { value = _model.Hotspot.x };
+            _hotspotY = new("Y") { value = _model.Hotspot.y };
+            _hotspotX.RegisterValueChangedCallback(evt => SetHotspot(new(evt.newValue, _model.Hotspot.y)));
+            _hotspotY.RegisterValueChangedCallback(evt => SetHotspot(new(_model.Hotspot.x, evt.newValue)));
+            fields.Add(_hotspotX);
+            fields.Add(_hotspotY);
+            fields.Add(Muted(
+                "Click or drag on the frame to set the click point.\nCoordinates are source pixels from the top-left corner and are scaled for every size."));
+            row.Add(fields);
+            section.Add(row);
+        }
+
+        private void BuildStates()
+        {
+            var section = Section($"States ({_model.States.Count})");
+            var header = Row();
+            header.Add(Fixed(new Label(string.Empty), 22f));
+            header.Add(Fixed(Muted("Name"), StateNameWidth));
+            header.Add(Fixed(Muted("Frames"), NumberWidth));
+            header.Add(Fixed(Muted("Frame ms"), NumberWidth));
+            header.Add(Fixed(Muted("Delay ms"), NumberWidth));
+            header.Add(Muted("Source"));
+            section.Add(header);
+
+            foreach (var state in _model.States)
+            {
+                section.Add(StateRow(state));
+            }
+        }
+
+        private VisualElement StateRow(CursorBuilderState state)
+        {
+            var row = Row();
+
+            Toggle include = new() { value = state.Include, tooltip = "Include this state" };
+            include.RegisterValueChangedCallback(evt =>
+            {
+                state.Include = evt.newValue;
+                BuildTransitions();
+                RefreshPreview();
+                RefreshMessages();
+            });
+            row.Add(Fixed(include, 22f));
+
+            TextField textField = new() { value = state.Name, isDelayed = true };
+            textField.RegisterValueChangedCallback(evt => RenameState(state, evt.newValue));
+            row.Add(Fixed(textField, StateNameWidth));
+
+            row.Add(Fixed(new Label(state.IsMissing ? "missing" : state.Clip.FramePaths.Count.ToString()), NumberWidth));
+
+            FloatField duration = new() { value = state.FrameDurationMs };
+            duration.RegisterValueChangedCallback(evt =>
+            {
+                state.FrameDurationMs = evt.newValue;
+                RefreshMessages();
+            });
+            row.Add(Fixed(duration, NumberWidth));
+
+            FloatField delay = new() { value = state.LoopDelayMs };
+            delay.RegisterValueChangedCallback(evt =>
+            {
+                state.LoopDelayMs = evt.newValue;
+                RefreshMessages();
+            });
+            row.Add(Fixed(delay, NumberWidth));
+
+            row.Add(SourceLabel(state.Clip));
+            return row;
+        }
+
+        private void BuildTransitions()
+        {
+            _transitionsContainer.Clear();
+            var section = Section($"Transitions ({_model.Transitions.Count})", _transitionsContainer);
+            if (_model.Transitions.Count == 0)
+            {
+                section.Add(Muted("No transition folders found. Name them like 'DefaultToGrab' or 'Default_to_Grab'."));
+                return;
+            }
+
+            var header = Row();
+            header.Add(Fixed(new Label(string.Empty), 22f));
+            header.Add(Fixed(Muted("From"), StateDropdownWidth));
+            header.Add(Fixed(Muted("To"), StateDropdownWidth));
+            header.Add(Fixed(Muted("Frames"), NumberWidth));
+            header.Add(Fixed(Muted("Frame ms"), NumberWidth));
+            header.Add(Fixed(Muted("Total"), NumberWidth));
+            header.Add(Fixed(Muted("Ends"), 40f));
+            header.Add(Fixed(Muted("Reverse"), 54f));
+            header.Add(Fixed(Muted("Rev. ms"), NumberWidth));
+            header.Add(Muted("Source"));
+            section.Add(header);
+
+            var stateNames = _model.IncludedStateNames();
+            foreach (var transition in _model.Transitions)
+            {
+                section.Add(TransitionRow(transition, stateNames));
+            }
+        }
+
+        private VisualElement TransitionRow(CursorBuilderTransition transition, List<string> stateNames)
+        {
+            var row = Row();
+
+            Toggle include = new() { value = transition.Include, tooltip = "Include this transition" };
+            include.RegisterValueChangedCallback(evt =>
+            {
+                transition.Include = evt.newValue;
+                RefreshMessages();
+            });
+            row.Add(Fixed(include, 22f));
+
+            row.Add(Fixed(StateDropdown(transition.From, stateNames, value =>
+            {
+                transition.From = value;
+                RefreshMessages();
+            }), StateDropdownWidth));
+            row.Add(Fixed(StateDropdown(transition.To, stateNames, value =>
+            {
+                transition.To = value;
+                RefreshMessages();
+            }), StateDropdownWidth));
+
+            row.Add(Fixed(new Label(transition.IsMissing ? "missing" : transition.Clip.FramePaths.Count.ToString()),
+                NumberWidth));
+
+            var total = new Label(TotalLabel(transition));
+            total.tooltip = "Time from the request until the destination state shows.";
+
+            FloatField duration = new() { value = transition.FrameDurationMs };
+            duration.RegisterValueChangedCallback(evt =>
+            {
+                transition.FrameDurationMs = evt.newValue;
+                total.text = TotalLabel(transition);
+                RefreshMessages();
+            });
+            row.Add(Fixed(duration, NumberWidth));
+            row.Add(Fixed(total, NumberWidth));
+
+            Toggle endpoints = new()
+            {
+                value = transition.IncludesEndpoints,
+                tooltip = "The first and last frames repeat the two states' first frames and are skipped during playback."
+            };
+            endpoints.RegisterValueChangedCallback(evt =>
+            {
+                transition.IncludesEndpoints = evt.newValue;
+                total.text = TotalLabel(transition);
+                RefreshMessages();
+            });
+            row.Add(Fixed(endpoints, 40f));
+
+            FloatField reverseDuration = new()
+            {
+                value = transition.ReverseFrameDurationMs,
+                tooltip = "Frame time when played backwards. 0 uses the forward frame time."
+            };
+            reverseDuration.SetEnabled(transition.Reversible);
+            reverseDuration.RegisterValueChangedCallback(evt =>
+            {
+                transition.ReverseFrameDurationMs = evt.newValue;
+                RefreshMessages();
+            });
+
+            Toggle reversible = new()
+            {
+                value = transition.Reversible,
+                tooltip = "Play this transition backwards for the opposite direction."
+            };
+            reversible.RegisterValueChangedCallback(evt =>
+            {
+                transition.Reversible = evt.newValue;
+                reverseDuration.SetEnabled(evt.newValue);
+                RefreshMessages();
+            });
+            row.Add(Fixed(reversible, 54f));
+            row.Add(Fixed(reverseDuration, NumberWidth));
+
+            row.Add(SourceLabel(transition.Clip));
+            return row;
+        }
+
+        private void BuildCode()
+        {
+            var section = Section("State constants");
+            section.Add(Muted(
+                "Generates a static class with a CursorStateId field per state, regenerated on every import. Several sets can share one class."));
+
+            TextField className = new("Class name") { value = _model.ClassName, isDelayed = true };
+            TextField @namespace = new("Namespace") { value = _model.Namespace, isDelayed = true };
+            TextField path = new("File") { value = _model.CodePath, isDelayed = true };
+
+            Toggle generate = new("Generate") { value = _model.GenerateCode };
+            generate.RegisterValueChangedCallback(evt =>
+            {
+                _model.GenerateCode = evt.newValue;
+                className.SetEnabled(evt.newValue);
+                @namespace.SetEnabled(evt.newValue);
+                path.SetEnabled(evt.newValue);
+                RefreshMessages();
+            });
+
+            className.RegisterValueChangedCallback(evt =>
+            {
+                _model.RenameClass(evt.newValue.Trim());
+                path.SetValueWithoutNotify(_model.CodePath);
+                RefreshMessages();
+            });
+            @namespace.RegisterValueChangedCallback(evt =>
+            {
+                _model.Namespace = evt.newValue.Trim();
+                RefreshMessages();
+            });
+            path.RegisterValueChangedCallback(evt =>
+            {
+                _model.CodePath = evt.newValue.Trim().Replace('\\', '/');
+                RefreshMessages();
+            });
+
+            className.SetEnabled(_model.GenerateCode);
+            @namespace.SetEnabled(_model.GenerateCode);
+            path.SetEnabled(_model.GenerateCode);
+            section.Add(generate);
+            section.Add(className);
+            section.Add(@namespace);
+            section.Add(path);
+        }
+
+        private void RenameState(CursorBuilderState state, string newName)
+        {
+            var oldName = state.Name;
+            state.Name = newName.Trim();
+            foreach (var transition in _model.Transitions)
+            {
+                if (transition.From == oldName)
+                {
+                    transition.From = state.Name;
+                }
+
+                if (transition.To == oldName)
+                {
+                    transition.To = state.Name;
+                }
+            }
+
+            BuildTransitions();
+            RefreshMessages();
+        }
+
+        private void SetHotspotFromPointer(Vector3 localPosition)
+        {
+            var x = Mathf.FloorToInt(localPosition.x / _previewZoom);
+            var y = Mathf.FloorToInt(localPosition.y / _previewZoom);
+            _hotspotX.SetValueWithoutNotify(x);
+            _hotspotY.SetValueWithoutNotify(y);
+            SetHotspot(new(x, y));
+        }
+
+        private void SetHotspot(Vector2Int hotspot)
+        {
+            _model.Hotspot = hotspot;
+            PlaceMarker();
+            RefreshMessages();
+        }
+
+        private void RefreshPreview()
+        {
+            DestroyPreview();
+            var clip = _model.HotspotPreviewClip();
+            if (clip == null)
+            {
+                _previewFrame.style.display = DisplayStyle.None;
+                return;
+            }
+
+            _previewTexture = new(2, 2, TextureFormat.RGBA32, false)
+            {
+                filterMode = FilterMode.Point,
+                hideFlags = HideFlags.HideAndDontSave
+            };
+            _previewTexture.LoadImage(File.ReadAllBytes(clip.FramePaths[0]));
+            _previewZoom = Mathf.Max(1, Mathf.FloorToInt(PreviewSize / Mathf.Max(_previewTexture.width,
+                _previewTexture.height)));
+
+            var width = _previewTexture.width * _previewZoom;
+            var height = _previewTexture.height * _previewZoom;
+            _previewFrame.style.display = DisplayStyle.Flex;
+            _previewFrame.style.width = width;
+            _previewFrame.style.height = height;
+            _previewImage.image = _previewTexture;
+            _previewImage.style.width = width;
+            _previewImage.style.height = height;
+            PlaceMarker();
+        }
+
+        private void PlaceMarker()
+        {
+            if (_previewTexture == null)
+            {
+                return;
+            }
+
+            var size = Mathf.Max(_previewZoom, 3);
+            var offset = (size - _previewZoom) / 2f;
+            _hotspotMarker.style.left = _model.Hotspot.x * _previewZoom - offset;
+            _hotspotMarker.style.top = _model.Hotspot.y * _previewZoom - offset;
+            _hotspotMarker.style.width = size;
+            _hotspotMarker.style.height = size;
+        }
+
+        private void RefreshMessages()
+        {
+            if (_messages == null)
+            {
+                return;
+            }
+
+            _messages.Clear();
+            CursorImportReport report = new();
+            _model.Validate(report);
+
+            var shown = 0;
+            foreach (var error in report.Errors)
+            {
+                if (shown++ < MaxMessages)
+                {
+                    _messages.Add(new HelpBox(error, HelpBoxMessageType.Error));
+                }
+            }
+
+            foreach (var warning in report.Warnings)
+            {
+                if (shown++ < MaxMessages)
+                {
+                    _messages.Add(new HelpBox(warning, HelpBoxMessageType.Warning));
+                }
+            }
+
+            var exists = File.Exists(_model.OutputPath);
+            _createButton.text = exists ? "Update Cursor Set" : "Create Cursor Set";
+            _createButton.SetEnabled(!report.HasErrors);
+        }
+
+        private void Create()
+        {
+            CursorImportReport report = new();
+            _model.Validate(report);
+            if (report.HasErrors)
+            {
+                RefreshMessages();
+                return;
+            }
+
+            var path = _model.OutputPath;
+            if (File.Exists(path) && path != _definitionPath && !EditorUtility.DisplayDialog("Overwrite cursor set?",
+                    $"'{path}' already exists. Replace it with the set from this window?", "Replace", "Cancel"))
+            {
+                return;
+            }
+
+            Directory.CreateDirectory(Path.GetDirectoryName(path) ?? string.Empty);
+            File.WriteAllText(path, CursorSetDefinitionWriter.Write(_model.ToDefinition()));
+            AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+            _definitionPath = path;
+
+            var asset = AssetDatabase.LoadAssetAtPath<CursorSet>(path);
+            if (asset != null)
+            {
+                Selection.activeObject = asset;
+                EditorGUIUtility.PingObject(asset);
+            }
+
+            RefreshMessages();
+        }
+
+        private void BrowseFolder()
+        {
+            var start = string.IsNullOrEmpty(_sourceFolder) ? Application.dataPath : Path.GetFullPath(_sourceFolder);
+            var selected = EditorUtility.OpenFolderPanel("Choose the cursor frames folder", start, string.Empty);
+            if (string.IsNullOrEmpty(selected))
+            {
+                return;
+            }
+
+            var projectPath = ToProjectPath(selected);
+            if (projectPath == null)
+            {
+                EditorUtility.DisplayDialog("Folder outside the project",
+                    "Choose a folder inside this project's Assets folder.", "OK");
+                return;
+            }
+
+            _sourceFolder = projectPath;
+            _definitionPath = FindExistingDefinition(projectPath);
+            Reload();
+        }
+
+        private void ParseSizes(string text)
+        {
+            _model.Sizes.Clear();
+            foreach (var part in text.Split(new[] { ',', ' ', ';' }, StringSplitOptions.RemoveEmptyEntries))
+            {
+                _model.Sizes.Add(int.TryParse(part, out var size) ? size : 0);
+            }
+        }
+
+        private void DestroyPreview()
+        {
+            if (_previewTexture == null)
+            {
+                return;
+            }
+
+            Object.DestroyImmediate(_previewTexture);
+            _previewTexture = null;
+        }
+
+        private static string ToProjectPath(string absolutePath)
+        {
+            var normalized = Path.GetFullPath(absolutePath).Replace('\\', '/').TrimEnd('/');
+            var assets = Path.GetFullPath(Application.dataPath).Replace('\\', '/').TrimEnd('/');
+            if (normalized == assets)
+            {
+                return "Assets";
+            }
+
+            return normalized.StartsWith(assets + "/", StringComparison.OrdinalIgnoreCase)
+                ? "Assets" + normalized.Substring(assets.Length)
+                : null;
+        }
+
+        private static string TotalLabel(CursorBuilderTransition transition)
+        {
+            var frames = transition.Clip.FramePaths.Count - (transition.IncludesEndpoints ? 2 : 0);
+            return $"{Mathf.Max(0, frames) * transition.FrameDurationMs:0} ms";
+        }
+
+        private VisualElement Section(string text, VisualElement parent = null)
+        {
+            Foldout foldout = new() { text = text, value = true };
+            foldout.style.marginTop = 8f;
+            (parent ?? _content).Add(foldout);
+            return foldout;
+        }
+
+        private static DropdownField StateDropdown(string value, List<string> stateNames, Action<string> changed)
+        {
+            List<string> choices = new(stateNames);
+            if (!string.IsNullOrEmpty(value) && !choices.Contains(value))
+            {
+                choices.Add(value);
+            }
+
+            DropdownField dropdown = new(choices, value ?? string.Empty);
+            dropdown.RegisterValueChangedCallback(evt => changed(evt.newValue));
+            return dropdown;
+        }
+
+        private static VisualElement Row()
+        {
+            VisualElement row = new();
+            row.style.flexDirection = FlexDirection.Row;
+            row.style.alignItems = Align.Center;
+            row.style.marginBottom = 2f;
+            return row;
+        }
+
+        private static T Fixed<T>(T element, float width) where T : VisualElement
+        {
+            element.style.width = width;
+            element.style.flexShrink = 0f;
+            element.style.marginLeft = 0f;
+            element.style.marginRight = 4f;
+            return element;
+        }
+
+        private static Label Muted(string text)
+        {
+            Label label = new(text);
+            label.style.color = _mutedText;
+            label.style.whiteSpace = WhiteSpace.Normal;
+            return label;
+        }
+
+        private static Label SourceLabel(CursorScannedClip clip)
+        {
+            var label = Muted(clip.Key);
+            label.tooltip = clip.Problem ?? clip.Key;
+            label.style.flexShrink = 1f;
+            label.style.overflow = Overflow.Hidden;
+            label.style.whiteSpace = WhiteSpace.NoWrap;
+            label.style.textOverflow = TextOverflow.Ellipsis;
+            if (clip.Problem != null)
+            {
+                label.style.color = new Color(0.9f, 0.4f, 0.3f);
+            }
+
+            return label;
+        }
+
+        private static void SetBorder(VisualElement element, Color color, float width)
+        {
+            element.style.borderLeftColor = color;
+            element.style.borderRightColor = color;
+            element.style.borderTopColor = color;
+            element.style.borderBottomColor = color;
+            element.style.borderLeftWidth = width;
+            element.style.borderRightWidth = width;
+            element.style.borderTopWidth = width;
+            element.style.borderBottomWidth = width;
+        }
+    }
+}

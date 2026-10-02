@@ -112,7 +112,7 @@ namespace Opportunv.LiveCursor.Tests.Editor
 
             _set = _baker.Bake(CreateStandardDefinition(), "Set");
 
-            Assert.That(_report.Errors, Has.Some.Contains("'Wrong' is 16x16"));
+            Assert.That(_report.Errors, Has.Some.Contains("('Wrong') is 16x16"));
             Assert.That(_set.StateCount, Is.EqualTo(0));
         }
 

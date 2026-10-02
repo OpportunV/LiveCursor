@@ -10,5 +10,6 @@ namespace Opportunv.LiveCursor.Editor
         public int[] hotspot;
         public CursorStateDefinition[] states;
         public CursorTransitionDefinition[] transitions;
+        public CursorCodeDefinition code;
     }
 }

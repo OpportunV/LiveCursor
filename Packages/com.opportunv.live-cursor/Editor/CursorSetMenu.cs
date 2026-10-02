@@ -1,27 +1,49 @@
+using System.IO;
 using UnityEditor;
 
 namespace Opportunv.LiveCursor.Editor
 {
     internal static class CursorSetMenu
     {
-        private const string Template = @"{
-  ""sizes"": [32, 48, 64],
-  ""hotspot"": [0, 0],
-  ""states"": [
-    {
-      ""name"": ""Default"",
-      ""frames"": { ""folder"": ""Default"" },
-      ""frameDurationMs"": 100
-    }
-  ],
-  ""transitions"": []
-}
-";
-
         [MenuItem("Assets/Create/Live Cursor/Cursor Set", priority = 200)]
         private static void CreateCursorSet()
         {
-            ProjectWindowUtil.CreateAssetWithContent($"New Cursor Set.{CursorSetImporter.Extension}", Template);
+            CursorSetBuilderWindow.OpenForFolder(SelectedFolder());
+        }
+
+        [MenuItem("Assets/Live Cursor/Build Cursor Set From Folder", priority = 1000)]
+        private static void BuildFromFolder()
+        {
+            CursorSetBuilderWindow.OpenForFolder(SelectedFolder());
+        }
+
+        [MenuItem("Assets/Live Cursor/Build Cursor Set From Folder", true)]
+        private static bool CanBuildFromFolder()
+        {
+            var path = AssetDatabase.GetAssetPath(Selection.activeObject);
+            return AssetDatabase.IsValidFolder(path) && path != "Assets";
+        }
+
+        [MenuItem("Window/Live Cursor/Cursor Set Builder")]
+        private static void OpenBuilder()
+        {
+            CursorSetBuilderWindow.OpenForFolder(SelectedFolder());
+        }
+
+        private static string SelectedFolder()
+        {
+            var path = AssetDatabase.GetAssetPath(Selection.activeObject);
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+
+            if (path.EndsWith($".{CursorSetImporter.Extension}"))
+            {
+                return Path.GetDirectoryName(path)?.Replace('\\', '/');
+            }
+
+            return AssetDatabase.IsValidFolder(path) ? path : Path.GetDirectoryName(path)?.Replace('\\', '/');
         }
     }
 }

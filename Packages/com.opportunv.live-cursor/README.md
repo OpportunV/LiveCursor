@@ -10,12 +10,33 @@ Animated hardware (OS) cursors for Unity with zero added input lag.
 
 Status: early development.
 
-## Importing a cursor set
+## Creating a cursor set
 
-Put the frame PNGs next to a `.cursorset` file (JSON) and Unity imports it into a
+1. Put your frames in a folder: one subfolder of numbered PNGs per state
+   (`Idle/Default/Frame_000.png`, ...) and one per transition, named after the two states
+   (`DefaultToGrab`, `Default_to_Grab`, `default-to-grab`, `Default-Grab`, ...).
+   A folder of differently named single PNGs (`Default.png`, `Grab.png`) becomes one
+   single-frame state per file.
+2. Right-click the folder and choose **Live Cursor > Build Cursor Set From Folder**
+   (or **Assets > Create > Live Cursor > Cursor Set**).
+3. In the builder, click the frame to set the hotspot, untick anything you do not want,
+   adjust names and timings, and press **Create Cursor Set**.
+4. Optionally tick **State constants > Generate** to get a class with one `CursorStateId`
+   per state, so code never types state names by hand:
+
+   ```csharp
+   _cursor.SetState(CursorStates.Grab);
+   ```
+
+   The class is regenerated whenever the set is imported; several sets can share one class.
+
+Reopen a set later with **Edit in Cursor Set Builder** on its Inspector.
+
+## The .cursorset format
+
+The builder writes a `.cursorset` file (JSON) next to the frames, and Unity imports it into a
 `CursorSet` asset. Frames are baked for every listed size at import time; the PNGs
-themselves never need special import settings. Create one with
-**Assets > Create > Live Cursor > Cursor Set**.
+themselves never need special import settings. You can also write the file by hand.
 
 ```json
 {
@@ -50,6 +71,7 @@ themselves never need special import settings. Create one with
 | `includesEndpoints` | The first and last transition frames repeat frame 0 of the two states, so playback skips them. Default `true`. |
 | `reversible` | The transition may play backwards for the opposite direction. Default `true`. |
 | `reverseFrameDurationMs` | Frame time when playing backwards. `0` uses `frameDurationMs`. |
+| `code` | Optional `className`, `namespace` and `path` (relative to the file) of the generated state constants. |
 
 Art rules checked on import:
 

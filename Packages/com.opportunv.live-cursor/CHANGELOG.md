@@ -12,3 +12,6 @@ All notable changes to this package are documented here. The format follows
 - Cursor Animator component driving the hardware cursor.
 - `.cursorset` importer: frames from folders, file lists or grid sheets, baked per size with a
   linear-light premultiplied downscale, plus art-rule checks.
+- Cursor Set Builder window: scans a folder, detects states and transitions, picks the hotspot
+  and writes the `.cursorset`.
+- Generated state constants (`CursorStateId` fields) kept in sync on import.
