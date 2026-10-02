@@ -10,3 +10,5 @@ All notable changes to this package are documented here. The format follows
 - Cursor set asset with looping states, authored transitions and per-size frames.
 - Cursor player core with reverse playback, mid-transition reversal and queued state changes.
 - Cursor Animator component driving the hardware cursor.
+- `.cursorset` importer: frames from folders, file lists or grid sheets, baked per size with a
+  linear-light premultiplied downscale, plus art-rule checks.

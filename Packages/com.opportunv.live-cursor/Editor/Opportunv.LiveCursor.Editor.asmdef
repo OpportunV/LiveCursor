@@ -1,0 +1,18 @@
+{
+    "name": "Opportunv.LiveCursor.Editor",
+    "rootNamespace": "Opportunv.LiveCursor",
+    "references": [
+        "Opportunv.LiveCursor"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

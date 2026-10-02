@@ -3,7 +3,6 @@ using UnityEngine;
 
 namespace Opportunv.LiveCursor
 {
-    [CreateAssetMenu(fileName = "CursorSet", menuName = "Live Cursor/Cursor Set")]
     public sealed class CursorSet : ScriptableObject
     {
         [SerializeField] private int[] _sizes = { 32 };

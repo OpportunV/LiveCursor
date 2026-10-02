@@ -3,6 +3,7 @@
     "rootNamespace": "Opportunv.LiveCursor",
     "references": [
         "Opportunv.LiveCursor",
+        "Opportunv.LiveCursor.Editor",
         "UnityEngine.TestRunner",
         "UnityEditor.TestRunner"
     ],
