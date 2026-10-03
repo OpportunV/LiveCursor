@@ -25,10 +25,9 @@ namespace Opportunv.LiveCursor.Editor
         {
             var set = ScriptableObject.CreateInstance<CursorSet>();
             set.name = setName;
-            set.Initialize(Array.Empty<int>(), Array.Empty<Vector2>(), Array.Empty<CursorState>(),
-                Array.Empty<CursorTransition>());
+            set.Initialize(Array.Empty<int>(), Array.Empty<CursorState>(), Array.Empty<CursorTransition>());
 
-            if (!CursorSetDefinitionValidator.Validate(definition, _report))
+            if (!Validate(definition, _report))
             {
                 return set;
             }
@@ -54,17 +53,12 @@ namespace Opportunv.LiveCursor.Editor
             CheckEndpoints(definition, stateFrames, transitionFrames);
 
             _sizes = (int[])definition.sizes.Clone();
-            var hotspots = new Vector2[_sizes.Length];
-            for (var i = 0; i < _sizes.Length; i++)
-            {
-                hotspots[i] = ScaleHotspot(definition.hotspot, _sizes[i]);
-            }
-
             var states = new CursorState[definition.states.Length];
             for (var i = 0; i < states.Length; i++)
             {
                 var state = definition.states[i];
-                var clip = BakeClip(state.name, stateFrames[i], state.frameDurationMs);
+                var hotspot = StateHotspot(definition, i);
+                var clip = BakeClip(state.name, stateFrames[i], state.frameDurationMs, hotspot, hotspot);
                 states[i] = new(state.name, clip, state.loopDelayMs / 1000f);
             }
 
@@ -72,13 +66,19 @@ namespace Opportunv.LiveCursor.Editor
             for (var i = 0; i < bakedTransitions.Length; i++)
             {
                 var transition = transitions[i];
+                var start = HasHotspot(transition.hotspot)
+                    ? ToVector(transition.hotspot)
+                    : StateHotspot(definition, IndexOfState(definition, transition.from));
+                var end = HasHotspot(transition.hotspot)
+                    ? ToVector(transition.hotspot)
+                    : StateHotspot(definition, IndexOfState(definition, transition.to));
                 var clip = BakeClip($"{transition.from}>{transition.to}", transitionFrames[i],
-                    transition.frameDurationMs);
+                    transition.frameDurationMs, start, end);
                 bakedTransitions[i] = new(transition.from, transition.to, clip, transition.includesEndpoints,
                     transition.reversible, transition.reverseFrameDurationMs / 1000f);
             }
 
-            set.Initialize(_sizes, hotspots, states, bakedTransitions);
+            set.Initialize(_sizes, states, bakedTransitions);
             return set;
         }
 
@@ -118,11 +118,21 @@ namespace Opportunv.LiveCursor.Editor
                 }
             }
 
-            var hotspot = definition.hotspot;
-            if (hotspot[0] < 0 || hotspot[1] < 0 || hotspot[0] >= _canvasWidth || hotspot[1] >= _canvasHeight)
+            CheckHotspot(definition.hotspot, "Hotspot");
+            foreach (var state in definition.states)
             {
-                _report.Error(
-                    $"Hotspot ({hotspot[0]}, {hotspot[1]}) is outside the {_canvasWidth}x{_canvasHeight} canvas.");
+                if (HasHotspot(state.hotspot))
+                {
+                    CheckHotspot(state.hotspot, $"{StateLabel(state)}: hotspot");
+                }
+            }
+
+            foreach (var transition in transitions)
+            {
+                if (HasHotspot(transition.hotspot))
+                {
+                    CheckHotspot(transition.hotspot, $"{TransitionLabel(transition)}: hotspot");
+                }
             }
 
             foreach (var size in definition.sizes)
@@ -135,6 +145,15 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             return !_report.HasErrors;
+        }
+
+        private void CheckHotspot(int[] hotspot, string label)
+        {
+            if (hotspot[0] < 0 || hotspot[1] < 0 || hotspot[0] >= _canvasWidth || hotspot[1] >= _canvasHeight)
+            {
+                _report.Error(
+                    $"{label} ({hotspot[0]}, {hotspot[1]}) is outside the {_canvasWidth}x{_canvasHeight} canvas.");
+            }
         }
 
         private void CheckCanvas(string label, List<Texture2D> frames)
@@ -184,13 +203,17 @@ namespace Opportunv.LiveCursor.Editor
             }
         }
 
-        private CursorClip BakeClip(string label, List<Texture2D> masters, float frameDurationMs)
+        private CursorClip BakeClip(string label, List<Texture2D> masters, float frameDurationMs, Vector2 startHotspot,
+            Vector2 endHotspot)
         {
             var frames = new CursorFrame[masters.Count];
             for (var f = 0; f < masters.Count; f++)
             {
                 var pixels = masters[f].GetPixels32();
+                var progress = masters.Count > 1 ? f / (float)(masters.Count - 1) : 0f;
+                var hotspot = Vector2.Lerp(startHotspot, endHotspot, progress);
                 var textures = new Texture2D[_sizes.Length];
+                var hotspots = new Vector2[_sizes.Length];
                 for (var s = 0; s < _sizes.Length; s++)
                 {
                     var size = _sizes[s];
@@ -207,19 +230,31 @@ namespace Opportunv.LiveCursor.Editor
                     texture.Apply(false, false);
                     Textures.Add(texture);
                     textures[s] = texture;
+                    hotspots[s] = ScaleHotspot(hotspot, size);
                 }
 
-                frames[f] = new(textures);
+                frames[f] = new(textures, hotspots);
             }
 
             return new(frames, frameDurationMs / 1000f);
         }
 
-        private Vector2 ScaleHotspot(int[] hotspot, int size)
+        private Vector2 ScaleHotspot(Vector2 hotspot, int size)
         {
-            var x = Mathf.Clamp(Mathf.Round(hotspot[0] * (float)size / _canvasWidth), 0f, size - 1);
-            var y = Mathf.Clamp(Mathf.Round(hotspot[1] * (float)size / _canvasHeight), 0f, size - 1);
+            var x = Mathf.Clamp(Mathf.Round(hotspot.x * size / _canvasWidth), 0f, size - 1);
+            var y = Mathf.Clamp(Mathf.Round(hotspot.y * size / _canvasHeight), 0f, size - 1);
             return new(x, y);
+        }
+
+        private static Vector2 StateHotspot(CursorSetDefinition definition, int stateIndex)
+        {
+            var hotspot = definition.states[stateIndex].hotspot;
+            return ToVector(HasHotspot(hotspot) ? hotspot : definition.hotspot);
+        }
+
+        private static Vector2 ToVector(int[] hotspot)
+        {
+            return new(hotspot[0], hotspot[1]);
         }
 
         private static int IndexOfState(CursorSetDefinition definition, string name)

@@ -177,11 +177,14 @@ namespace Opportunv.LiveCursor.Editor
             foreach (var definitionState in definition.states ?? Array.Empty<CursorStateDefinition>())
             {
                 var clip = TakeClip(directory, definitionState.frames, definitionState.name);
+                var ownHotspot = CursorSetDefinitionValidator.HasHotspot(definitionState.hotspot);
                 CursorBuilderState state = new(clip)
                 {
                     Name = definitionState.name,
                     FrameDurationMs = definitionState.frameDurationMs,
-                    LoopDelayMs = definitionState.loopDelayMs
+                    LoopDelayMs = definitionState.loopDelayMs,
+                    HasOwnHotspot = ownHotspot,
+                    Hotspot = ownHotspot ? new(definitionState.hotspot[0], definitionState.hotspot[1]) : Hotspot
                 };
                 states.Add(state);
             }
@@ -198,7 +201,10 @@ namespace Opportunv.LiveCursor.Editor
                     FrameDurationMs = definitionTransition.frameDurationMs,
                     Reversible = definitionTransition.reversible,
                     ReverseFrameDurationMs = definitionTransition.reverseFrameDurationMs,
-                    IncludesEndpoints = definitionTransition.includesEndpoints
+                    IncludesEndpoints = definitionTransition.includesEndpoints,
+                    Hotspot = CursorSetDefinitionValidator.HasHotspot(definitionTransition.hotspot)
+                        ? definitionTransition.hotspot
+                        : null
                 };
                 transitions.Add(transition);
             }
@@ -222,7 +228,8 @@ namespace Opportunv.LiveCursor.Editor
                     name = state.Name,
                     frames = FramesFor(state.Clip, directory),
                     frameDurationMs = state.FrameDurationMs,
-                    loopDelayMs = state.LoopDelayMs
+                    loopDelayMs = state.LoopDelayMs,
+                    hotspot = state.HasOwnHotspot ? new[] { state.Hotspot.x, state.Hotspot.y } : null
                 });
             }
 
@@ -242,7 +249,8 @@ namespace Opportunv.LiveCursor.Editor
                     frameDurationMs = transition.FrameDurationMs,
                     includesEndpoints = transition.IncludesEndpoints,
                     reversible = transition.Reversible,
-                    reverseFrameDurationMs = transition.ReverseFrameDurationMs
+                    reverseFrameDurationMs = transition.ReverseFrameDurationMs,
+                    hotspot = transition.Hotspot
                 });
             }
 
@@ -300,9 +308,13 @@ namespace Opportunv.LiveCursor.Editor
                     report.Error($"Frames must be square, but the canvas is {width}x{height}.");
                 }
 
-                if (Hotspot.x < 0 || Hotspot.y < 0 || Hotspot.x >= width || Hotspot.y >= height)
+                CheckHotspot(Hotspot, "Hotspot", width, height, report);
+                foreach (var state in States)
                 {
-                    report.Error($"Hotspot ({Hotspot.x}, {Hotspot.y}) is outside the {width}x{height} canvas.");
+                    if (state.Include && state.HasOwnHotspot)
+                    {
+                        CheckHotspot(state.Hotspot, $"State '{state.Name}' hotspot", width, height, report);
+                    }
                 }
             }
 
@@ -339,6 +351,11 @@ namespace Opportunv.LiveCursor.Editor
                     transition.IncludesEndpoints = DetectEndpoints(transition);
                 }
             }
+        }
+
+        public Vector2Int HotspotOf(CursorBuilderState state)
+        {
+            return state is { HasOwnHotspot: true } ? state.Hotspot : Hotspot;
         }
 
         public List<string> IncludedStateNames()
@@ -426,6 +443,15 @@ namespace Opportunv.LiveCursor.Editor
         private string OutputDirectory()
         {
             return Path.GetDirectoryName(OutputPath ?? string.Empty)?.Replace('\\', '/') ?? string.Empty;
+        }
+
+        private static void CheckHotspot(Vector2Int hotspot, string label, int width, int height,
+            CursorImportReport report)
+        {
+            if (hotspot.x < 0 || hotspot.y < 0 || hotspot.x >= width || hotspot.y >= height)
+            {
+                report.Error($"{label} ({hotspot.x}, {hotspot.y}) is outside the {width}x{height} canvas.");
+            }
         }
 
         private static void CheckClip(CursorScannedClip clip, string label, ref CursorScannedClip reference,
@@ -523,19 +549,19 @@ namespace Opportunv.LiveCursor.Editor
             var right = CursorClipFrameReader.Read(rightClip, rightIndex);
             try
             {
-                return left != null && right != null &&
+                return left && right &&
                        left.width == right.width &&
                        left.height == right.height &&
                        CursorPixelComparer.CountDifferentPixels(left, right) == 0;
             }
             finally
             {
-                if (left != null)
+                if (left)
                 {
                     Object.DestroyImmediate(left);
                 }
 
-                if (right != null)
+                if (right)
                 {
                     Object.DestroyImmediate(right);
                 }

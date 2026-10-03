@@ -22,7 +22,8 @@ Status: early development.
    its **Frames** field in the builder.
 2. Right-click the folder and choose **Live Cursor > Build Cursor Set From Folder**
    (or **Assets > Create > Live Cursor > Cursor Set**).
-3. In the builder, click the frame to set the hotspot, untick anything you do not want,
+3. In the builder, click the frame to set the hotspot (pick a state under **Hotspot for** to
+   give it its own, such as the centre of a text beam), untick anything you do not want,
    adjust names and timings, and press **Create Cursor Set**.
 4. Optionally tick **State constants > Generate** to get a class with one `CursorStateId`
    per state, so code never types state names by hand:
@@ -93,7 +94,8 @@ themselves never need special import settings. You can also write the file by ha
   "states": [
     { "name": "Default", "frames": { "folder": "Idle/Default" }, "frameDurationMs": 100 },
     { "name": "Busy", "frames": { "sheet": "Busy.png", "columns": 4, "rows": 3, "count": 12 }, "frameDurationMs": 83 },
-    { "name": "Grab", "frames": { "files": ["Grab.png"] }, "loopDelayMs": 0 }
+    { "name": "Grab", "frames": { "files": ["Grab.png"] }, "loopDelayMs": 0 },
+    { "name": "Text", "frames": { "files": ["Text.png"] }, "hotspot": [64, 64] }
   ],
   "transitions": [
     {
@@ -113,6 +115,8 @@ themselves never need special import settings. You can also write the file by ha
 |---|---|
 | `sizes` | Square sizes to bake, in pixels. At runtime the smallest size that covers the system cursor size is used. Default `[32, 48, 64]`. |
 | `hotspot` | Click point in source pixels, measured from the top-left corner. It is scaled for every size. |
+| `states[].hotspot` | Optional click point for one state, overriding the set's `hotspot`. |
+| `transitions[].hotspot` | Optional fixed click point for a transition. Without it, the click point moves frame by frame from the source state's to the destination's. |
 | `states[].frames` | A `folder` of PNGs (natural sort order), a list of `files`, or a grid `sheet` with `columns`, `rows` and an optional `count`. Paths are relative to the `.cursorset` file. |
 | `frameDurationMs` | Time each frame is shown. |
 | `loopDelayMs` | Time the first frame is held after entering the state before the loop starts. |
@@ -124,7 +128,7 @@ themselves never need special import settings. You can also write the file by ha
 Art rules checked on import:
 
 - Every frame has the same square canvas.
-- The hotspot lies inside the canvas.
+- Every hotspot lies inside the canvas.
 - With `includesEndpoints`, a transition's first and last frames match frame 0 of its states
   (otherwise the cursor jumps when the transition starts or ends).
 

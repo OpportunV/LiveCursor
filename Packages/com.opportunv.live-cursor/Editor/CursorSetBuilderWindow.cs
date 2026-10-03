@@ -4,7 +4,6 @@ using System.IO;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UIElements;
-using Object = UnityEngine.Object;
 
 namespace Opportunv.LiveCursor.Editor
 {
@@ -19,9 +18,14 @@ namespace Opportunv.LiveCursor.Editor
         private const float StateDropdownWidth = 130f;
         private const int MaxMessages = 30;
         private const string OwnClassChoice = "Own class";
+        private const string DefaultHotspotChoice = "Default (all states)";
+        private const float HotspotWidth = 70f;
 
         private static readonly Color _mutedText = new(0.6f, 0.6f, 0.6f);
         private static readonly Color _previewBackground = new(0.16f, 0.16f, 0.16f);
+        private static readonly Color _inheritedMarker = new(1f, 1f, 1f, 0.55f);
+
+        private readonly Dictionary<CursorBuilderState, Button> _hotspotButtons = new();
 
         private CursorBuilderModel _model;
         private Texture2D _previewTexture;
@@ -34,6 +38,9 @@ namespace Opportunv.LiveCursor.Editor
         private VisualElement _hotspotMarker;
         private IntegerField _hotspotX;
         private IntegerField _hotspotY;
+        private DropdownField _hotspotTarget;
+        private Toggle _ownHotspot;
+        private CursorBuilderState _hotspotState;
         private Button _createButton;
 
         public static void OpenForFolder(string folder)
@@ -88,6 +95,7 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             _model = null;
+            _hotspotState = null;
             if (!string.IsNullOrEmpty(_definitionPath) && File.Exists(_definitionPath))
             {
                 _model = CursorBuilderModel.FromDefinitionFile(_definitionPath);
@@ -208,16 +216,91 @@ namespace Opportunv.LiveCursor.Editor
             row.Add(_previewFrame);
 
             VisualElement fields = new();
-            _hotspotX = new("X") { value = _model.Hotspot.x };
-            _hotspotY = new("Y") { value = _model.Hotspot.y };
-            _hotspotX.RegisterValueChangedCallback(evt => SetHotspot(new(evt.newValue, _model.Hotspot.y)));
-            _hotspotY.RegisterValueChangedCallback(evt => SetHotspot(new(_model.Hotspot.x, evt.newValue)));
+            fields.style.flexGrow = 1f;
+            _hotspotTarget = new("Hotspot for", new List<string>(), 0);
+            _hotspotTarget.RegisterValueChangedCallback(evt =>
+                SelectHotspotTarget(_model.States.Find(state => state.Include && state.Name == evt.newValue)));
+            _ownHotspot = new("Own hotspot")
+            {
+                tooltip = "Use a click point for this state instead of the default. Transitions move between the two."
+            };
+            _ownHotspot.RegisterValueChangedCallback(evt =>
+            {
+                if (_hotspotState == null)
+                {
+                    return;
+                }
+
+                _hotspotState.Hotspot = _model.Hotspot;
+                _hotspotState.HasOwnHotspot = evt.newValue;
+                RefreshHotspotEditor();
+                RefreshMessages();
+            });
+            _hotspotX = new("X");
+            _hotspotY = new("Y");
+            _hotspotX.RegisterValueChangedCallback(evt => SetHotspot(new(evt.newValue, _hotspotY.value)));
+            _hotspotY.RegisterValueChangedCallback(evt => SetHotspot(new(_hotspotX.value, evt.newValue)));
+            fields.Add(_hotspotTarget);
+            fields.Add(_ownHotspot);
             fields.Add(_hotspotX);
             fields.Add(_hotspotY);
             fields.Add(Muted(
-                "Click or drag on the frame to set the click point.\nCoordinates are source pixels from the top-left corner and are scaled for every size."));
+                "Click or drag on the frame to set the click point. Pick a state to give it its own, for example the centre of a text beam or crosshair.\nCoordinates are source pixels from the top-left corner and are scaled for every size."));
             row.Add(fields);
             section.Add(row);
+            RefreshHotspotChoices();
+        }
+
+        private void RefreshHotspotChoices()
+        {
+            if (_hotspotTarget == null)
+            {
+                return;
+            }
+
+            if (_hotspotState is { Include: false })
+            {
+                _hotspotState = null;
+            }
+
+            List<string> choices = new() { DefaultHotspotChoice };
+            choices.AddRange(_model.IncludedStateNames());
+            _hotspotTarget.choices = choices;
+            _hotspotTarget.SetValueWithoutNotify(_hotspotState?.Name ?? DefaultHotspotChoice);
+            RefreshHotspotEditor();
+        }
+
+        private void SelectHotspotTarget(CursorBuilderState state)
+        {
+            _hotspotState = state;
+            _hotspotTarget.SetValueWithoutNotify(state?.Name ?? DefaultHotspotChoice);
+            RefreshPreview();
+            RefreshHotspotEditor();
+        }
+
+        private void RefreshHotspotEditor()
+        {
+            if (_hotspotX == null)
+            {
+                return;
+            }
+
+            _ownHotspot.style.display = _hotspotState != null ? DisplayStyle.Flex : DisplayStyle.None;
+            _ownHotspot.SetValueWithoutNotify(_hotspotState is { HasOwnHotspot: true });
+            var hotspot = _model.HotspotOf(_hotspotState);
+            _hotspotX.SetValueWithoutNotify(hotspot.x);
+            _hotspotY.SetValueWithoutNotify(hotspot.y);
+            PlaceMarker();
+
+            foreach (var pair in _hotspotButtons)
+            {
+                pair.Value.text = HotspotLabel(pair.Key);
+            }
+        }
+
+        private string HotspotLabel(CursorBuilderState state)
+        {
+            return state.HasOwnHotspot ? $"{state.Hotspot.x}, {state.Hotspot.y}" : "default";
         }
 
         private void BuildStates()
@@ -229,9 +312,11 @@ namespace Opportunv.LiveCursor.Editor
             header.Add(Fixed(Muted("Frames"), NumberWidth));
             header.Add(Fixed(Muted("Frame ms"), NumberWidth));
             header.Add(Fixed(Muted("Delay ms"), NumberWidth));
+            header.Add(Fixed(Muted("Hotspot"), HotspotWidth));
             header.Add(Muted("Source"));
             section.Add(header);
 
+            _hotspotButtons.Clear();
             foreach (var state in _model.States)
             {
                 section.Add(StateRow(state));
@@ -247,6 +332,7 @@ namespace Opportunv.LiveCursor.Editor
             {
                 state.Include = evt.newValue;
                 BuildTransitions();
+                RefreshHotspotChoices();
                 RefreshPreview();
                 RefreshMessages();
             });
@@ -273,6 +359,14 @@ namespace Opportunv.LiveCursor.Editor
                 RefreshMessages();
             });
             row.Add(Fixed(delay, NumberWidth));
+
+            Button hotspot = new(() => SelectHotspotTarget(state.Include ? state : null))
+            {
+                text = HotspotLabel(state),
+                tooltip = "Edit this state's hotspot."
+            };
+            _hotspotButtons[state] = hotspot;
+            row.Add(Fixed(hotspot, HotspotWidth));
 
             row.Add(SourceLabel(state.Clip));
             return row;
@@ -529,6 +623,7 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             BuildTransitions();
+            RefreshHotspotChoices();
             RefreshMessages();
         }
 
@@ -543,15 +638,24 @@ namespace Opportunv.LiveCursor.Editor
 
         private void SetHotspot(Vector2Int hotspot)
         {
-            _model.Hotspot = hotspot;
-            PlaceMarker();
+            if (_hotspotState != null)
+            {
+                _hotspotState.HasOwnHotspot = true;
+                _hotspotState.Hotspot = hotspot;
+            }
+            else
+            {
+                _model.Hotspot = hotspot;
+            }
+
+            RefreshHotspotEditor();
             RefreshMessages();
         }
 
         private void RefreshPreview()
         {
             DestroyPreview();
-            var clip = _model.HotspotPreviewClip();
+            var clip = _hotspotState is { IsMissing: false } ? _hotspotState.Clip : _model.HotspotPreviewClip();
             if (clip == null)
             {
                 _previewFrame.style.display = DisplayStyle.None;
@@ -583,15 +687,17 @@ namespace Opportunv.LiveCursor.Editor
 
         private void PlaceMarker()
         {
-            if (_previewTexture == null)
+            if (!_previewTexture)
             {
                 return;
             }
 
             var size = Mathf.Max(_previewZoom, 3);
             var offset = (size - _previewZoom) / 2f;
-            _hotspotMarker.style.left = _model.Hotspot.x * _previewZoom - offset;
-            _hotspotMarker.style.top = _model.Hotspot.y * _previewZoom - offset;
+            var hotspot = _model.HotspotOf(_hotspotState);
+            _hotspotMarker.style.left = hotspot.x * _previewZoom - offset;
+            _hotspotMarker.style.top = hotspot.y * _previewZoom - offset;
+            SetBorder(_hotspotMarker, _hotspotState is { HasOwnHotspot: false } ? _inheritedMarker : Color.red, 1f);
             _hotspotMarker.style.width = size;
             _hotspotMarker.style.height = size;
         }
@@ -652,7 +758,7 @@ namespace Opportunv.LiveCursor.Editor
             _definitionPath = path;
 
             var asset = AssetDatabase.LoadAssetAtPath<CursorSet>(path);
-            if (asset != null)
+            if (asset)
             {
                 Selection.activeObject = asset;
                 EditorGUIUtility.PingObject(asset);
@@ -694,12 +800,12 @@ namespace Opportunv.LiveCursor.Editor
 
         private void DestroyPreview()
         {
-            if (_previewTexture == null)
+            if (!_previewTexture)
             {
                 return;
             }
 
-            Object.DestroyImmediate(_previewTexture);
+            DestroyImmediate(_previewTexture);
             _previewTexture = null;
         }
 

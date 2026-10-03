@@ -23,3 +23,4 @@ All notable changes to this package are documented here. The format follows
 - Prioritised state requests (`Request`, released by disposing the handle) on top of the base state.
 - `CursorHoverManipulator` for UI Toolkit and the `CursorHover` component for uGUI and scene objects.
 - `[CursorStateName]` attribute that shows a dropdown of known state names in the Inspector.
+- Per-state hotspots; transitions move the click point between their states' hotspots.

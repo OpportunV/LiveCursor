@@ -10,5 +10,6 @@ namespace Opportunv.LiveCursor.Editor
         public CursorFramesDefinition frames;
         public float frameDurationMs = 100f;
         public float loopDelayMs;
+        public int[] hotspot;
     }
 }

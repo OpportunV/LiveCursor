@@ -135,6 +135,42 @@ namespace Opportunv.LiveCursor.Tests.Editor
         }
 
         [Test]
+        public void DefinitionFile_RoundTripsStateHotspots()
+        {
+            var model = CursorBuilderModel.FromFolder(Folder);
+            model.Hotspot = new(1, 1);
+            var grab = model.States.Find(state => state.Name == "Grab");
+            grab.HasOwnHotspot = true;
+            grab.Hotspot = new(2, 3);
+            model.Transitions[0].Hotspot = new[] { 3, 3 };
+            File.WriteAllText(model.OutputPath, CursorSetDefinitionWriter.Write(model.ToDefinition()));
+
+            var loaded = CursorBuilderModel.FromDefinitionFile(model.OutputPath);
+
+            var loadedGrab = loaded.States.Find(state => state.Name == "Grab");
+            var loadedDefault = loaded.States.Find(state => state.Name == "Default");
+            Assert.That(loadedGrab.HasOwnHotspot, Is.True);
+            Assert.That(loaded.HotspotOf(loadedGrab), Is.EqualTo(new Vector2Int(2, 3)));
+            Assert.That(loadedDefault.HasOwnHotspot, Is.False);
+            Assert.That(loaded.HotspotOf(loadedDefault), Is.EqualTo(new Vector2Int(1, 1)));
+            Assert.That(loaded.Transitions.Exists(transition => transition.Hotspot is { Length: 2 }), Is.True);
+        }
+
+        [Test]
+        public void Validate_ReportsStateHotspotOutsideCanvas()
+        {
+            var model = CursorBuilderModel.FromFolder(Folder);
+            var grab = model.States.Find(state => state.Name == "Grab");
+            grab.HasOwnHotspot = true;
+            grab.Hotspot = new(7, 0);
+            CursorImportReport report = new();
+
+            model.Validate(report);
+
+            Assert.That(report.Errors, Has.Some.Contains("State 'Grab' hotspot (7, 0) is outside"));
+        }
+
+        [Test]
         public void DefinitionFile_IgnoredWhenNothingMatches()
         {
             var path = $"{Folder}/Set.cursorset";

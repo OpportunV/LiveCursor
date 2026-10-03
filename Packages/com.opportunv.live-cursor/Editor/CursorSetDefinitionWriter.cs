@@ -28,13 +28,18 @@ namespace Opportunv.LiveCursor.Editor
                     builder.Append(",\n      \"loopDelayMs\": ").Append(Number(state.loopDelayMs));
                 }
 
+                if (CursorSetDefinitionValidator.HasHotspot(state.hotspot))
+                {
+                    builder.Append(",\n      \"hotspot\": ").Append(Numbers(state.hotspot));
+                }
+
                 builder.Append("\n    }");
             }
 
             builder.Append(states.Length > 0 ? "\n  ],\n" : "],\n");
 
             builder.Append("  \"transitions\": [");
-            var transitions = definition.transitions ?? new CursorTransitionDefinition[0];
+            var transitions = definition.transitions ?? Array.Empty<CursorTransitionDefinition>();
             for (var i = 0; i < transitions.Length; i++)
             {
                 var transition = transitions[i];
@@ -50,6 +55,11 @@ namespace Opportunv.LiveCursor.Editor
                 {
                     builder.Append(",\n      \"reverseFrameDurationMs\": ")
                         .Append(Number(transition.reverseFrameDurationMs));
+                }
+
+                if (CursorSetDefinitionValidator.HasHotspot(transition.hotspot))
+                {
+                    builder.Append(",\n      \"hotspot\": ").Append(Numbers(transition.hotspot));
                 }
 
                 builder.Append("\n    }");

@@ -52,7 +52,7 @@ namespace Opportunv.LiveCursor.Tests.Editor
             Assert.That(set.GetState(0).Loop.FrameCount, Is.EqualTo(2));
             Assert.That(set.GetState(1).Loop.FrameCount, Is.EqualTo(2));
             Assert.That(set.TransitionCount, Is.EqualTo(1));
-            Assert.That(set.GetHotspot(0), Is.EqualTo(new Vector2(1f, 1f)));
+            Assert.That(set.GetState(0).Loop.GetFrame(0).GetHotspot(0), Is.EqualTo(new Vector2(1f, 1f)));
 
             var texture = set.GetState(0).Loop.GetFrame(1).GetTexture(0);
             Assert.That(texture.width, Is.EqualTo(4));

@@ -6,7 +6,6 @@ namespace Opportunv.LiveCursor
     public sealed class CursorSet : ScriptableObject
     {
         [SerializeField] private int[] _sizes = { 32 };
-        [SerializeField] private Vector2[] _hotspots = { Vector2.zero };
         [SerializeField] private CursorState[] _states = Array.Empty<CursorState>();
         [SerializeField] private CursorTransition[] _transitions = Array.Empty<CursorTransition>();
 
@@ -23,11 +22,6 @@ namespace Opportunv.LiveCursor
         public int GetSize(int index)
         {
             return _sizes[index];
-        }
-
-        public Vector2 GetHotspot(int sizeIndex)
-        {
-            return _hotspots[sizeIndex];
         }
 
         public CursorState GetState(int index)
@@ -103,10 +97,9 @@ namespace Opportunv.LiveCursor
             return best >= 0 ? best : largest;
         }
 
-        internal void Initialize(int[] sizes, Vector2[] hotspots, CursorState[] states, CursorTransition[] transitions)
+        internal void Initialize(int[] sizes, CursorState[] states, CursorTransition[] transitions)
         {
             _sizes = sizes;
-            _hotspots = hotspots;
             _states = states;
             _transitions = transitions;
             InvalidateLookup();

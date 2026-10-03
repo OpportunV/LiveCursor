@@ -1,6 +1,8 @@
+using System;
 using NUnit.Framework;
 using Opportunv.LiveCursor.Editor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace Opportunv.LiveCursor.Tests.Editor
 {
@@ -51,8 +53,8 @@ namespace Opportunv.LiveCursor.Tests.Editor
             Assert.That(_set.name, Is.EqualTo("Set"));
             Assert.That(_set.SizeCount, Is.EqualTo(2));
             Assert.That(_set.GetSize(0), Is.EqualTo(4));
-            Assert.That(_set.GetHotspot(0), Is.EqualTo(new Vector2(2f, 1f)));
-            Assert.That(_set.GetHotspot(1), Is.EqualTo(new Vector2(4f, 2f)));
+            Assert.That(_set.GetState(0).Loop.GetFrame(0).GetHotspot(0), Is.EqualTo(new Vector2(2f, 1f)));
+            Assert.That(_set.GetState(0).Loop.GetFrame(0).GetHotspot(1), Is.EqualTo(new Vector2(4f, 2f)));
             Assert.That(_set.StateCount, Is.EqualTo(2));
             Assert.That(_set.GetState(0).Loop.FrameCount, Is.EqualTo(2));
             Assert.That(_set.GetState(0).Loop.FrameDuration, Is.EqualTo(0.1f).Within(1e-6f));
@@ -166,11 +168,83 @@ namespace Opportunv.LiveCursor.Tests.Editor
         }
 
         [Test]
+        public void Bake_UsesStateHotspotOverride()
+        {
+            AddStandardFrames();
+            var definition = CreateStandardDefinition();
+            definition.states[1].hotspot = new[] { 6, 6 };
+
+            _set = _baker.Bake(definition, "Set");
+
+            Assert.That(_report.Errors, Is.Empty);
+            Assert.That(_set.GetState(0).Loop.GetFrame(0).GetHotspot(1), Is.EqualTo(new Vector2(4f, 2f)));
+            Assert.That(_set.GetState(1).Loop.GetFrame(0).GetHotspot(1), Is.EqualTo(new Vector2(6f, 6f)));
+            Assert.That(_set.GetState(1).Loop.GetFrame(0).GetHotspot(0), Is.EqualTo(new Vector2(3f, 3f)));
+        }
+
+        [Test]
+        public void Bake_MovesTransitionHotspotBetweenStates()
+        {
+            AddStandardFrames();
+            var definition = CreateStandardDefinition();
+            definition.states[1].hotspot = new[] { 6, 6 };
+
+            _set = _baker.Bake(definition, "Set");
+
+            var clip = _set.GetTransition(0).Clip;
+            Assert.That(clip.GetFrame(0).GetHotspot(1), Is.EqualTo(new Vector2(4f, 2f)));
+            Assert.That(clip.GetFrame(1).GetHotspot(1), Is.EqualTo(new Vector2(5f, 3f)));
+            Assert.That(clip.GetFrame(2).GetHotspot(1), Is.EqualTo(new Vector2(5f, 5f)));
+            Assert.That(clip.GetFrame(3).GetHotspot(1), Is.EqualTo(new Vector2(6f, 6f)));
+        }
+
+        [Test]
+        public void Bake_UsesTransitionHotspotOverride()
+        {
+            AddStandardFrames();
+            var definition = CreateStandardDefinition();
+            definition.states[1].hotspot = new[] { 6, 6 };
+            definition.transitions[0].hotspot = new[] { 1, 1 };
+
+            _set = _baker.Bake(definition, "Set");
+
+            var clip = _set.GetTransition(0).Clip;
+            for (var i = 0; i < clip.FrameCount; i++)
+            {
+                Assert.That(clip.GetFrame(i).GetHotspot(1), Is.EqualTo(new Vector2(1f, 1f)));
+            }
+        }
+
+        [Test]
+        public void Bake_ReportsStateHotspotOutsideCanvas()
+        {
+            AddStandardFrames();
+            var definition = CreateStandardDefinition();
+            definition.states[1].hotspot = new[] { 9, 0 };
+
+            _set = _baker.Bake(definition, "Set");
+
+            Assert.That(_report.Errors, Has.Some.Contains("State 'B': hotspot (9, 0) is outside"));
+        }
+
+        [Test]
+        public void Bake_ReportsMalformedStateHotspot()
+        {
+            AddStandardFrames();
+            var definition = CreateStandardDefinition();
+            definition.states[0].hotspot = new[] { 1 };
+
+            _set = _baker.Bake(definition, "Set");
+
+            Assert.That(_report.Errors, Has.Some.Contains("'hotspot' must be [x, y]"));
+        }
+
+        [Test]
         public void Bake_ReportsMissingSizes()
         {
             AddStandardFrames();
             var definition = CreateStandardDefinition();
-            definition.sizes = new int[0];
+            definition.sizes = Array.Empty<int>();
 
             _set = _baker.Bake(definition, "Set");
 

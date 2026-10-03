@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Opportunv.LiveCursor.Editor
 {
-    [ScriptedImporter(2, Extension)]
+    [ScriptedImporter(3, Extension)]
     public sealed class CursorSetImporter : ScriptedImporter
     {
         public const string Extension = "cursorset";

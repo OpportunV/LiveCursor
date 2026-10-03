@@ -219,15 +219,14 @@ namespace Opportunv.LiveCursor
                 return;
             }
 
-            var hotspot = Set.GetHotspot(_sizeIndex);
             for (var i = 0; i < Set.StateCount; i++)
             {
-                WarmClip(Set.GetState(i).Loop, hotspot);
+                WarmClip(Set.GetState(i).Loop);
             }
 
             for (var i = 0; i < Set.TransitionCount; i++)
             {
-                WarmClip(Set.GetTransition(i).Clip, hotspot);
+                WarmClip(Set.GetTransition(i).Clip);
             }
 
             Refresh();
@@ -515,7 +514,7 @@ namespace Opportunv.LiveCursor
             Apply();
         }
 
-        private Texture2D CurrentTexture()
+        private CursorFrame CurrentFrame()
         {
             if (_stateIndex < 0 || _sizeIndex < 0)
             {
@@ -523,23 +522,19 @@ namespace Opportunv.LiveCursor
             }
 
             var clip = _transitioning ? _transition.Clip : Set.GetState(_stateIndex).Loop;
-            if (_frameIndex >= clip.FrameCount)
-            {
-                return null;
-            }
-
-            return clip.GetFrame(_frameIndex).GetTexture(_sizeIndex);
+            return _frameIndex < clip.FrameCount ? clip.GetFrame(_frameIndex) : null;
         }
 
         private void Apply()
         {
-            var texture = CurrentTexture();
+            var frame = CurrentFrame();
+            var texture = frame?.GetTexture(_sizeIndex);
             if (!texture)
             {
                 return;
             }
 
-            var hotspot = Set.GetHotspot(_sizeIndex);
+            var hotspot = frame.GetHotspot(_sizeIndex);
             if (ReferenceEquals(texture, _appliedTexture) && hotspot == _appliedHotspot)
             {
                 return;
@@ -550,14 +545,15 @@ namespace Opportunv.LiveCursor
             _output.Apply(texture, hotspot);
         }
 
-        private void WarmClip(CursorClip clip, Vector2 hotspot)
+        private void WarmClip(CursorClip clip)
         {
             for (var i = 0; i < clip.FrameCount; i++)
             {
-                var texture = clip.GetFrame(i).GetTexture(_sizeIndex);
-                if (texture != null)
+                var frame = clip.GetFrame(i);
+                var texture = frame.GetTexture(_sizeIndex);
+                if (texture)
                 {
-                    _output.Apply(texture, hotspot);
+                    _output.Apply(texture, frame.GetHotspot(_sizeIndex));
                 }
             }
         }

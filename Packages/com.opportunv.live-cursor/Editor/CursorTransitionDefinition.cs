@@ -13,5 +13,6 @@ namespace Opportunv.LiveCursor.Editor
         public bool includesEndpoints = true;
         public bool reversible = true;
         public float reverseFrameDurationMs;
+        public int[] hotspot;
     }
 }

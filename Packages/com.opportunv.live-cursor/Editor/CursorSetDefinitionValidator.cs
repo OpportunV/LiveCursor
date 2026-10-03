@@ -67,6 +67,8 @@ namespace Opportunv.LiveCursor.Editor
                 {
                     report.Error($"{StateLabel(state)}: 'loopDelayMs' cannot be negative.");
                 }
+
+                CheckOptionalHotspot(state.hotspot, StateLabel(state), report);
             }
 
             HashSet<string> pairs = new(StringComparer.Ordinal);
@@ -102,9 +104,16 @@ namespace Opportunv.LiveCursor.Editor
                 {
                     report.Error($"{label}: 'reverseFrameDurationMs' cannot be negative.");
                 }
+
+                CheckOptionalHotspot(transition.hotspot, label, report);
             }
 
             return !report.HasErrors;
+        }
+
+        public static bool HasHotspot(int[] hotspot)
+        {
+            return hotspot is { Length: 2 };
         }
 
         public static string StateLabel(CursorStateDefinition state)
@@ -115,6 +124,14 @@ namespace Opportunv.LiveCursor.Editor
         public static string TransitionLabel(CursorTransitionDefinition transition)
         {
             return $"Transition '{transition.from}' -> '{transition.to}'";
+        }
+
+        private static void CheckOptionalHotspot(int[] hotspot, string label, CursorImportReport report)
+        {
+            if (hotspot is { Length: > 0 } && !HasHotspot(hotspot))
+            {
+                report.Error($"{label}: 'hotspot' must be [x, y] in source pixels, or left out to use the default.");
+            }
         }
     }
 }

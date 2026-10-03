@@ -18,6 +18,8 @@ namespace Opportunv.LiveCursor.Editor
 
         public bool IncludesEndpoints { get; set; } = true;
 
+        public int[] Hotspot { get; set; }
+
         public bool IsMissing => Clip.FramePaths.Count == 0;
 
         public CursorBuilderTransition(CursorScannedClip clip, string from, string to)

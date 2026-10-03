@@ -34,15 +34,9 @@ namespace Opportunv.LiveCursor.Tests.Editor
 
         public CursorSet Build(string name = "TestSet")
         {
-            var hotspots = new Vector2[_sizes.Length];
-            for (var i = 0; i < _sizes.Length; i++)
-            {
-                hotspots[i] = new(_sizes[i] / 4f, _sizes[i] / 4f);
-            }
-
             var set = ScriptableObject.CreateInstance<CursorSet>();
             set.name = name;
-            set.Initialize(_sizes, hotspots, _states.ToArray(), _transitions.ToArray());
+            set.Initialize(_sizes, _states.ToArray(), _transitions.ToArray());
             _objects.Add(set);
             _states.Clear();
             _transitions.Clear();
@@ -70,8 +64,10 @@ namespace Opportunv.LiveCursor.Tests.Editor
             for (var f = 0; f < frameCount; f++)
             {
                 var textures = new Texture2D[_sizes.Length];
+                var hotspots = new Vector2[_sizes.Length];
                 for (var s = 0; s < _sizes.Length; s++)
                 {
+                    hotspots[s] = new(_sizes[s] / 4f, _sizes[s] / 4f);
                     Texture2D texture = new(1, 1)
                     {
                         name = FrameName(prefix, f, _sizes[s])
@@ -80,7 +76,7 @@ namespace Opportunv.LiveCursor.Tests.Editor
                     textures[s] = texture;
                 }
 
-                frames[f] = new(textures);
+                frames[f] = new(textures, hotspots);
             }
 
             return new(frames, frameDuration);
