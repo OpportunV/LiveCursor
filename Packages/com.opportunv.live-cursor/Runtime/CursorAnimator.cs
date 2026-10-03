@@ -8,7 +8,7 @@ namespace Opportunv.LiveCursor
     public sealed class CursorAnimator : MonoBehaviour
     {
         [SerializeField] private CursorSet _cursorSet;
-        [SerializeField] private string _initialState = "Default";
+        [SerializeField, CursorStateName] private string _initialState = "Default";
         [SerializeField] private bool _idleEnabled = true;
         [SerializeField] private bool _warmOnSetChange;
         [SerializeField, Min(0)] private int _sizeOverride;
@@ -54,6 +54,21 @@ namespace Opportunv.LiveCursor
         public void SetState(string state, bool immediate = false)
         {
             _player.SetState(state, immediate);
+        }
+
+        public CursorRequest Request(CursorStateId state, int priority = 0, bool immediate = false)
+        {
+            return _player.Request(state, priority, immediate);
+        }
+
+        public CursorRequest Request(string state, int priority = 0, bool immediate = false)
+        {
+            return _player.Request(state, priority, immediate);
+        }
+
+        public void ReleaseAllRequests(bool immediate = false)
+        {
+            _player.ReleaseAllRequests(immediate);
         }
 
         public void SuppressIdle(object token)

@@ -1,0 +1,25 @@
+{
+    "name": "Opportunv.LiveCursor.UGUI",
+    "rootNamespace": "Opportunv.LiveCursor",
+    "references": [
+        "Opportunv.LiveCursor",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "LIVE_CURSOR_UGUI"
+    ],
+    "versionDefines": [
+        {
+            "name": "com.unity.ugui",
+            "expression": "1.0.0",
+            "define": "LIVE_CURSOR_UGUI"
+        }
+    ],
+    "noEngineReferences": false
+}

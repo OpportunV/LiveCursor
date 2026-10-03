@@ -5,7 +5,8 @@
   "description": "Animated hardware (OS) cursors with zero added input lag. Looping cursor states, authored transitions that play in reverse and turn around mid-way, and frames baked for the system cursor size.",
   "unity": "6000.0",
   "dependencies": {
-    "com.unity.modules.imageconversion": "1.0.0"
+    "com.unity.modules.imageconversion": "1.0.0",
+    "com.unity.modules.uielements": "1.0.0"
   },
   "license": "MIT",
   "author": {

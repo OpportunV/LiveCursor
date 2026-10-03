@@ -19,4 +19,7 @@ All notable changes to this package are documented here. The format follows
 - Cursor sets show their first frame as their icon in the Project window.
 - Cursor Set Builder reads sprite sheets, detected from names like `Grab_4x2.png` or set per row.
 - Cursor Set Preview window that plays states and transitions in the editor.
-- Double-clicking a cursor set opens it in the Cursor Set Builder.
+- Double-clicking a cursor set opens it in the Cursor Set Builder, with the preview docked beside it.
+- Prioritised state requests (`Request`, released by disposing the handle) on top of the base state.
+- `CursorHoverManipulator` for UI Toolkit and the `CursorHover` component for uGUI and scene objects.
+- `[CursorStateName]` attribute that shows a dropdown of known state names in the Inspector.

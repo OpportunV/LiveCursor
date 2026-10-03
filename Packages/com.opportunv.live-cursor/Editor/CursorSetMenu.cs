@@ -60,6 +60,7 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             CursorSetBuilderWindow.OpenForDefinition(path);
+            CursorSetPreviewWindow.Open(AssetDatabase.LoadAssetAtPath<CursorSet>(path));
             return true;
         }
 

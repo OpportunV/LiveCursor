@@ -16,6 +16,10 @@ namespace Opportunv.LiveCursor
 
         public CursorStateId RequestedState => _requestedState;
 
+        public CursorStateId BaseState => _baseState;
+
+        public int ActiveRequestCount => _requests.Count;
+
         public bool IsTransitioning => _transitioning;
 
         public int FrameIndex => _frameIndex;
@@ -46,6 +50,9 @@ namespace Opportunv.LiveCursor
 
         private readonly ICursorOutput _output;
         private readonly List<object> _idleSuppressors = new(4);
+        private readonly List<CursorRequestEntry> _requests = new(8);
+        private int _lastRequestId;
+        private CursorStateId _baseState;
         private int _sizeIndex = -1;
         private int _systemCursorSize;
         private CursorStateId _requestedState;
@@ -89,6 +96,11 @@ namespace Opportunv.LiveCursor
             }
 
             _sizeIndex = set.FindSizeIndex(_systemCursorSize);
+            if (!_baseState.IsValid)
+            {
+                _baseState = set.GetStateId(0);
+            }
+
             var index = set.FindState(_requestedState);
             EnterState(index >= 0 ? index : 0, false);
             Apply();
@@ -120,56 +132,35 @@ namespace Opportunv.LiveCursor
 
         public void SetState(CursorStateId state, bool immediate = false)
         {
-            _requestedState = state;
-            if (_stateIndex < 0)
+            _baseState = state;
+            if (_requests.Count == 0)
+            {
+                Drive(state, immediate);
+            }
+        }
+
+        public CursorRequest Request(CursorStateId state, int priority = 0, bool immediate = false)
+        {
+            var id = ++_lastRequestId;
+            _requests.Add(new(id, state, priority));
+            DriveEffective(immediate);
+            return new(this, id);
+        }
+
+        public CursorRequest Request(string state, int priority = 0, bool immediate = false)
+        {
+            return Request(new CursorStateId(state), priority, immediate);
+        }
+
+        public void ReleaseAllRequests(bool immediate = false)
+        {
+            if (_requests.Count == 0)
             {
                 return;
             }
 
-            var target = Set.FindState(state);
-            if (target < 0)
-            {
-                Debug.LogWarning($"[Live Cursor] Cursor set '{Set.name}' has no state '{state.Name}'.");
-                return;
-            }
-
-            if (!_transitioning)
-            {
-                if (target != _stateIndex)
-                {
-                    StartTransition(_stateIndex, target, false);
-                }
-            }
-            else if (target == _transitionDestination)
-            {
-                _queuedState = -1;
-                if (immediate)
-                {
-                    _elapsed = 0f;
-                    CompleteTransition();
-                }
-            }
-            else if (target == _transitionOrigin && _transition.Reversible)
-            {
-                _queuedState = -1;
-                Reverse();
-                if (immediate)
-                {
-                    StepTransition();
-                }
-            }
-            else
-            {
-                _queuedState = target;
-                if (immediate)
-                {
-                    _elapsed = 0f;
-                    CompleteTransition();
-                }
-            }
-
-            Apply();
-            RaisePendingEvent();
+            _requests.Clear();
+            DriveEffective(immediate);
         }
 
         public void Tick(float deltaTime)
@@ -252,6 +243,118 @@ namespace Opportunv.LiveCursor
         {
             _appliedTexture = null;
             _output.Clear();
+        }
+
+        internal bool IsRequestActive(int id)
+        {
+            return FindRequest(id) >= 0;
+        }
+
+        internal void Release(int id, bool immediate)
+        {
+            var index = FindRequest(id);
+            if (index < 0)
+            {
+                return;
+            }
+
+            _requests.RemoveAt(index);
+            DriveEffective(immediate);
+        }
+
+        private int FindRequest(int id)
+        {
+            for (var i = 0; i < _requests.Count; i++)
+            {
+                if (_requests[i].Id == id)
+                {
+                    return i;
+                }
+            }
+
+            return -1;
+        }
+
+        private CursorStateId EffectiveState()
+        {
+            if (_requests.Count == 0)
+            {
+                return _baseState;
+            }
+
+            var winner = _requests[0];
+            for (var i = 1; i < _requests.Count; i++)
+            {
+                if (_requests[i].Priority >= winner.Priority)
+                {
+                    winner = _requests[i];
+                }
+            }
+
+            return winner.State;
+        }
+
+        private void DriveEffective(bool immediate)
+        {
+            var state = EffectiveState();
+            if (state.IsValid && (state != _requestedState || immediate))
+            {
+                Drive(state, immediate);
+            }
+        }
+
+        private void Drive(CursorStateId state, bool immediate)
+        {
+            _requestedState = state;
+            if (_stateIndex < 0)
+            {
+                return;
+            }
+
+            var target = Set.FindState(state);
+            if (target < 0)
+            {
+                Debug.LogWarning($"[Live Cursor] Cursor set '{Set.name}' has no state '{state.Name}'.");
+                return;
+            }
+
+            if (!_transitioning)
+            {
+                if (target != _stateIndex)
+                {
+                    StartTransition(_stateIndex, target, false);
+                }
+            }
+            else if (target == _transitionDestination)
+            {
+                _queuedState = -1;
+                if (immediate)
+                {
+                    _elapsed = 0f;
+                    CompleteTransition();
+                }
+            }
+            else if (target == _transitionOrigin && _transition.Reversible)
+            {
+                _queuedState = -1;
+                Reverse();
+                if (immediate)
+                {
+                    StepTransition();
+                }
+            }
+            else
+            {
+                _queuedState = target;
+                if (immediate)
+                {
+                    _elapsed = 0f;
+                    CompleteTransition();
+                }
+            }
+
+            Apply();
+            RaisePendingEvent();
         }
 
         private int TargetStateIndex()

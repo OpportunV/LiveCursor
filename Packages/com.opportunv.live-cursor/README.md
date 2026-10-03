@@ -43,6 +43,43 @@ Reopen a set later by double-clicking it or with **Edit in Cursor Set Builder** 
 states to run transitions, change state mid-transition to see it turn around, and move the
 pointer into the **try it** box to see the real hardware cursor.
 
+## Driving the cursor
+
+Add a **Cursor Animator** component to a scene object (or register one with your DI
+container) and assign the set. Everything below goes through it, or through its `Player`.
+
+**From code**, set the base state, the one shown when nothing else asks for anything:
+
+```csharp
+_cursor.SetState(CursorStates.Busy);
+_cursor.SetState(CursorStates.Grab, immediate: true); // click-driven: first frame shows this frame
+```
+
+**Requests** sit on top of the base state, so hover effects, drags and game code never fight.
+The highest priority wins, ties go to the newest request, and releasing a request falls back
+to the next one (or to the base state). Handles are structs, so requests do not allocate.
+
+```csharp
+var drag = _cursor.Request(CursorStates.Dragging, priority: 100, immediate: true);
+// ...
+drag.Dispose(); // or drag.Release(immediate: true)
+```
+
+**UI Toolkit**: add a manipulator. The optional pressed state is requested one priority
+higher while the left button is held.
+
+```csharp
+button.AddManipulator(new CursorHoverManipulator(_cursor, CursorStates.Grab, CursorStates.Dragging));
+```
+
+**uGUI and scene objects**: add **Live Cursor > Cursor Hover** (compiled only when the uGUI
+package is installed). It works on UI elements and, with a `PhysicsRaycaster` or
+`Physics2DRaycaster` on the camera and an EventSystem in the scene, on 3D and 2D colliders.
+It uses the assigned animator, or finds one in the scene.
+
+**State names in the Inspector**: mark a `string` field with `[CursorStateName]` to get a
+dropdown of the states in the project's cursor sets; `[CursorStateName(true)]` adds "None".
+
 ## The .cursorset format
 
 The builder writes a `.cursorset` file (JSON) next to the frames, and Unity imports it into a

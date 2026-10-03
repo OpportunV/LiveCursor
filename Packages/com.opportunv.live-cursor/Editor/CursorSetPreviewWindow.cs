@@ -47,9 +47,9 @@ namespace Opportunv.LiveCursor.Editor
 
         public static void Open(CursorSet set)
         {
-            var window = GetWindow<CursorSetPreviewWindow>("Cursor Set Preview");
+            var window = GetWindow<CursorSetPreviewWindow>("Cursor Set Preview", true, typeof(CursorSetBuilderWindow));
             window.minSize = new(540f, 440f);
-            if (set != null)
+            if (set)
             {
                 window.SetCursorSet(set);
             }

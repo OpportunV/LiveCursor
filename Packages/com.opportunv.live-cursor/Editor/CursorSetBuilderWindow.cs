@@ -54,7 +54,7 @@ namespace Opportunv.LiveCursor.Editor
 
         private static CursorSetBuilderWindow Open()
         {
-            var window = GetWindow<CursorSetBuilderWindow>("Cursor Set Builder");
+            var window = GetWindow<CursorSetBuilderWindow>("Cursor Set Builder", true, typeof(CursorSetPreviewWindow));
             window.minSize = new(760f, 480f);
             return window;
         }
