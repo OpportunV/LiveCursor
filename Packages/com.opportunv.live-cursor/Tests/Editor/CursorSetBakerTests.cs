@@ -33,7 +33,7 @@ namespace Opportunv.LiveCursor.Tests.Editor
                 Object.DestroyImmediate(texture);
             }
 
-            if (_set != null)
+            if (_set)
             {
                 Object.DestroyImmediate(_set);
             }

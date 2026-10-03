@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-namespace Opportunv.LiveCursor
+namespace Opportunv.LiveCursor.UGUI
 {
     [AddComponentMenu("Live Cursor/Cursor Hover")]
     public sealed class CursorHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler,
@@ -30,6 +30,17 @@ namespace Opportunv.LiveCursor
         private CursorStateId _pressedStateId;
         private CursorRequest _hover;
         private CursorRequest _press;
+
+        public void Configure(CursorAnimator animator, CursorStateId state, CursorStateId pressedState = default,
+            int priority = 0)
+        {
+            ReleaseAll();
+            _animator = animator;
+            _state = state.IsValid ? state.Name : string.Empty;
+            _pressedState = pressedState.IsValid ? pressedState.Name : string.Empty;
+            _priority = priority;
+            CacheIds();
+        }
 
         public void OnPointerEnter(PointerEventData eventData)
         {

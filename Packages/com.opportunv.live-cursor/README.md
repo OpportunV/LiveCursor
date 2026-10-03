@@ -81,6 +81,19 @@ It uses the assigned animator, or finds one in the scene.
 **State names in the Inspector**: mark a `string` field with `[CursorStateName]` to get a
 dropdown of the states in the project's cursor sets; `[CursorStateName(true)]` adds "None".
 
+## Samples
+
+Import **Demo** from the package's Samples tab in the Package Manager. It contains:
+
+- Two interchangeable skins, Twinkle and Midnight, with eight states (Default, Pointer,
+  Text, Busy, Blocked, Grab, Grabbing, Crosshair), transitions, per-state hotspots and shared
+  `DemoCursorStates` constants.
+- **UI Toolkit Demo**: hover cards, a held grab, a busy task set from code, a high-priority
+  request, idle on/off and skin switching.
+- **uGUI and Scene Demo**: the same with `Cursor Hover` on Canvas controls, plus 3D objects
+  with hover states and draggable crates. Its scripts compile only when the uGUI package is
+  installed, and it works with either input handling setting.
+
 ## The .cursorset format
 
 The builder writes a `.cursorset` file (JSON) next to the frames, and Unity imports it into a

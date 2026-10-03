@@ -24,3 +24,5 @@ All notable changes to this package are documented here. The format follows
 - `CursorHoverManipulator` for UI Toolkit and the `CursorHover` component for uGUI and scene objects.
 - `[CursorStateName]` attribute that shows a dropdown of known state names in the Inspector.
 - Per-state hotspots; transitions move the click point between their states' hotspots.
+- `CursorHover.Configure` for setting up the component from code.
+- Demo sample with two skins, a UI Toolkit scene and a uGUI and 3D scene.

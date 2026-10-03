@@ -73,7 +73,7 @@ namespace Opportunv.LiveCursor.Editor
         private void CreateGUI()
         {
             BuildLayout();
-            if (_set == null && Selection.activeObject is CursorSet selected)
+            if (!_set && Selection.activeObject is CursorSet selected)
             {
                 _set = selected;
             }
@@ -206,7 +206,7 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             _setField.SetValueWithoutNotify(_set);
-            _setPath = _set != null ? AssetDatabase.GetAssetPath(_set) : null;
+            _setPath = _set ? AssetDatabase.GetAssetPath(_set) : null;
             _player.SetSet(_set);
             _player.IdleEnabled = !_idleDisabled;
             _cycleElapsed = 0f;
@@ -218,7 +218,7 @@ namespace Opportunv.LiveCursor.Editor
         private void BuildSizes()
         {
             List<string> choices = new();
-            var count = _set != null ? _set.SizeCount : 0;
+            var count = _set ? _set.SizeCount : 0;
             var selected = count - 1;
             for (var i = 0; i < count; i++)
             {
@@ -240,7 +240,7 @@ namespace Opportunv.LiveCursor.Editor
         {
             _stateRow.Clear();
             _stateButtons.Clear();
-            if (_set == null)
+            if (!_set)
             {
                 return;
             }
@@ -306,7 +306,7 @@ namespace Opportunv.LiveCursor.Editor
 
             EditorApplication.delayCall += () =>
             {
-                if (this == null)
+                if (!this)
                 {
                     return;
                 }
@@ -326,9 +326,9 @@ namespace Opportunv.LiveCursor.Editor
 
             var texture = _output.Texture;
             _image.image = texture;
-            _image.style.display = texture != null ? DisplayStyle.Flex : DisplayStyle.None;
+            _image.style.display = texture ? DisplayStyle.Flex : DisplayStyle.None;
             _hotspotMarker.style.display = _image.style.display;
-            if (texture != null)
+            if (texture)
             {
                 var zoom = Mathf.Max(1, Mathf.FloorToInt(StageSize / Mathf.Max(texture.width, texture.height)));
                 var width = texture.width * zoom;
@@ -360,7 +360,7 @@ namespace Opportunv.LiveCursor.Editor
         {
             if (!_player.Set)
             {
-                _status.text = _set == null ? "Select a cursor set." : "This cursor set has no states.";
+                _status.text = !_set ? "Select a cursor set." : "This cursor set has no states.";
                 return;
             }
 
@@ -408,7 +408,7 @@ namespace Opportunv.LiveCursor.Editor
 
         private void ActivateHardware()
         {
-            if (EditorApplication.isPlaying || _output.Texture == null)
+            if (EditorApplication.isPlaying || !_output.Texture)
             {
                 return;
             }

@@ -8,6 +8,13 @@
     "com.unity.modules.imageconversion": "1.0.0",
     "com.unity.modules.uielements": "1.0.0"
   },
+  "samples": [
+    {
+      "displayName": "Demo",
+      "description": "Two cursor skins with eight states, a UI Toolkit scene, and a uGUI and 3D scene (needs the uGUI package).",
+      "path": "Samples~/Demo"
+    }
+  ],
   "license": "MIT",
   "author": {
     "name": "Opportunv"

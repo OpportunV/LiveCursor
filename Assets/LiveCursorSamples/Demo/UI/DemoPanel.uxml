@@ -1,0 +1,38 @@
+<ui:UXML xmlns:ui="UnityEngine.UIElements">
+    <Style src="DemoPanel.uss" />
+    <ui:VisualElement name="root" class="root">
+        <ui:Label text="Live Cursor" class="title" />
+        <ui:Label text="UI Toolkit demo. Hover the cards, press and hold the grab card, and type in the text card." class="subtitle" />
+        <ui:VisualElement class="cards">
+            <ui:VisualElement name="pointer-card" class="card">
+                <ui:Label text="Pointer" class="card-title" />
+                <ui:Label text="Links and buttons." class="card-text" />
+            </ui:VisualElement>
+            <ui:VisualElement name="text-card" class="card">
+                <ui:Label text="Text" class="card-title" />
+                <ui:TextField name="text-field" value="Type here" class="text-field" />
+            </ui:VisualElement>
+            <ui:VisualElement name="grab-card" class="card">
+                <ui:Label text="Grab" class="card-title" />
+                <ui:Label text="Press and hold to grab." class="card-text" />
+            </ui:VisualElement>
+            <ui:VisualElement name="aim-card" class="card">
+                <ui:Label text="Crosshair" class="card-title" />
+                <ui:Label text="Aiming and precise picking." class="card-text" />
+            </ui:VisualElement>
+            <ui:VisualElement name="blocked-card" class="card card--disabled">
+                <ui:Label text="Blocked" class="card-title" />
+                <ui:Label text="Not available right now." class="card-text" />
+            </ui:VisualElement>
+        </ui:VisualElement>
+        <ui:Label text="From code" class="section" />
+        <ui:VisualElement class="row">
+            <ui:Button name="task-button" text="Run a 3 s task" class="chip" />
+            <ui:Button name="busy-button" text="Hold Busy over everything" class="chip" />
+            <ui:Button name="idle-button" text="Idle: on" class="chip" />
+        </ui:VisualElement>
+        <ui:Label text="Skin" class="section" />
+        <ui:VisualElement name="skins" class="row" />
+        <ui:Label name="status" class="status" />
+    </ui:VisualElement>
+</ui:UXML>
