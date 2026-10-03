@@ -36,7 +36,12 @@ Status: early development.
    should share one class (**Share with**), so game code never depends on which set is active; a
    warning lists any state one of them lacks.
 
-Reopen a set later with **Edit in Cursor Set Builder** on its Inspector.
+Reopen a set later by double-clicking it or with **Edit in Cursor Set Builder** on its Inspector.
+
+**Preview** (Inspector button, **Assets > Live Cursor > Preview Cursor Set** or
+**Window > Live Cursor > Cursor Set Preview**) plays the set with the runtime player: click
+states to run transitions, change state mid-transition to see it turn around, and move the
+pointer into the **try it** box to see the real hardware cursor.
 
 ## The .cursorset format
 

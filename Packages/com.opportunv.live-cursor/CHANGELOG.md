@@ -18,3 +18,5 @@ All notable changes to this package are documented here. The format follows
   sharing between sets and a warning for states a sharing set lacks.
 - Cursor sets show their first frame as their icon in the Project window.
 - Cursor Set Builder reads sprite sheets, detected from names like `Grab_4x2.png` or set per row.
+- Cursor Set Preview window that plays states and transitions in the editor.
+- Double-clicking a cursor set opens it in the Cursor Set Builder.

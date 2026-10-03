@@ -10,9 +10,17 @@ namespace Opportunv.LiveCursor.Editor
         public override void OnInspectorGUI()
         {
             var importer = (CursorSetImporter)target;
-            if (GUILayout.Button("Edit in Cursor Set Builder", GUILayout.Height(24f)))
+            using (new EditorGUILayout.HorizontalScope())
             {
-                CursorSetBuilderWindow.OpenForDefinition(importer.assetPath);
+                if (GUILayout.Button("Edit in Cursor Set Builder", GUILayout.Height(24f)))
+                {
+                    CursorSetBuilderWindow.OpenForDefinition(importer.assetPath);
+                }
+
+                if (GUILayout.Button("Preview", GUILayout.Height(24f)))
+                {
+                    CursorSetPreviewWindow.Open(AssetDatabase.LoadAssetAtPath<CursorSet>(importer.assetPath));
+                }
             }
 
             ApplyRevertGUI();
