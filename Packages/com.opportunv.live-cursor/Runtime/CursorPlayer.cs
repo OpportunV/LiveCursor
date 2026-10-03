@@ -4,32 +4,47 @@ using UnityEngine;
 
 namespace Opportunv.LiveCursor
 {
+    /// <summary>Plays a <see cref="CursorSet"/>: shows the requested state's loop, runs transitions between states and
+    /// sends every frame to an <see cref="ICursorOutput"/>. Call <see cref="Tick"/> once per frame.</summary>
     public sealed class CursorPlayer
     {
+        /// <summary>Raised when a state is entered, after any transition into it has finished.</summary>
         public event Action<CursorStateId> StateEntered;
 
+        /// <summary>The cursor set being played, or <c>null</c>.</summary>
         public CursorSet Set { get; private set; }
 
+        /// <summary>The state currently shown. During a transition this is the state it started from.</summary>
         public CursorStateId CurrentState => _stateIndex >= 0 ? Set.GetStateId(_stateIndex) : default;
 
+        /// <summary>The state the cursor is heading to: the current state, or where the running transition will
+        /// end.</summary>
         public CursorStateId TargetState => _stateIndex >= 0 ? Set.GetStateId(TargetStateIndex()) : _requestedState;
 
-        public CursorStateId RequestedState => _requestedState;
-
+        /// <summary>The state set with <see cref="SetState(CursorStateId, bool)"/>, shown while no request is
+        /// active.</summary>
         public CursorStateId BaseState => _baseState;
 
+        /// <summary>The number of active requests.</summary>
         public int ActiveRequestCount => _requests.Count;
 
+        /// <summary>Whether a transition is playing.</summary>
         public bool IsTransitioning => _transitioning;
 
+        /// <summary>The index of the frame shown in the current loop or transition.</summary>
         public int FrameIndex => _frameIndex;
 
+        /// <summary>The baked size in use, in pixels, or 0 when no set is playing.</summary>
         public int CursorSize => _sizeIndex >= 0 ? Set.GetSize(_sizeIndex) : 0;
 
+        /// <summary>Whether any token passed to <see cref="SuppressIdle"/> is still holding the loops.</summary>
         public bool IsIdleSuppressed => _idleSuppressors.Count > 0;
 
+        /// <summary>Whether state loops are currently playing.</summary>
         public bool IsIdlePlaying => _idleEnabled && _idleSuppressors.Count == 0;
 
+        /// <summary>Whether state loops play. When off, each state shows its first frame; transitions still
+        /// play.</summary>
         public bool IdleEnabled
         {
             get => _idleEnabled;
@@ -74,11 +89,14 @@ namespace Opportunv.LiveCursor
         private Texture2D _appliedTexture;
         private Vector2 _appliedHotspot;
 
+        /// <summary>Creates a player that sends frames to <paramref name="output"/>.</summary>
         public CursorPlayer(ICursorOutput output)
         {
             _output = output ?? throw new ArgumentNullException(nameof(output));
         }
 
+        /// <summary>Plays <paramref name="set"/>, keeping the requested state when the set has it and otherwise
+        /// starting from its first state. Pass <c>null</c> to stop and restore the default cursor.</summary>
         public void SetSet(CursorSet set)
         {
             Set = set;
@@ -107,6 +125,8 @@ namespace Opportunv.LiveCursor
             RaisePendingEvent();
         }
 
+        /// <summary>Picks the smallest baked size that covers <paramref name="size"/> pixels, or the largest
+        /// one.</summary>
         public void SetSystemCursorSize(int size)
         {
             _systemCursorSize = size;
@@ -125,11 +145,15 @@ namespace Opportunv.LiveCursor
             Apply();
         }
 
+        /// <summary>Sets the base state by name. Prefer the <see cref="CursorStateId"/> overload with generated
+        /// constants.</summary>
         public void SetState(string state, bool immediate = false)
         {
             SetState(new CursorStateId(state), immediate);
         }
 
+        /// <summary>Sets the base state, shown while no request is active. Pass <paramref name="immediate"/> for
+        /// click-driven changes: the first frame of the change shows during this call.</summary>
         public void SetState(CursorStateId state, bool immediate = false)
         {
             _baseState = state;
@@ -139,6 +163,9 @@ namespace Opportunv.LiveCursor
             }
         }
 
+        /// <summary>Shows <paramref name="state"/> on top of the base state until the returned handle is released. The
+        /// highest priority wins and ties go to the newest request; releasing falls back to the next request or the
+        /// base state.</summary>
         public CursorRequest Request(CursorStateId state, int priority = 0, bool immediate = false)
         {
             var id = ++_lastRequestId;
@@ -147,11 +174,14 @@ namespace Opportunv.LiveCursor
             return new(this, id);
         }
 
+        /// <summary>Requests a state by name. Prefer the <see cref="CursorStateId"/> overload with generated
+        /// constants.</summary>
         public CursorRequest Request(string state, int priority = 0, bool immediate = false)
         {
             return Request(new CursorStateId(state), priority, immediate);
         }
 
+        /// <summary>Releases every active request and returns to the base state.</summary>
         public void ReleaseAllRequests(bool immediate = false)
         {
             if (_requests.Count == 0)
@@ -163,6 +193,7 @@ namespace Opportunv.LiveCursor
             DriveEffective(immediate);
         }
 
+        /// <summary>Advances playback by <paramref name="deltaTime"/> seconds.</summary>
         public void Tick(float deltaTime)
         {
             if (_stateIndex < 0 || deltaTime <= 0f)
@@ -185,6 +216,8 @@ namespace Opportunv.LiveCursor
             RaisePendingEvent();
         }
 
+        /// <summary>Holds state loops on their first frame until <see cref="ReleaseIdle"/> is called with the same
+        /// <paramref name="token"/>. Several tokens can hold the loops at once.</summary>
         public void SuppressIdle(object token)
         {
             if (token == null || _idleSuppressors.Contains(token))
@@ -199,6 +232,7 @@ namespace Opportunv.LiveCursor
             }
         }
 
+        /// <summary>Releases a token passed to <see cref="SuppressIdle"/>.</summary>
         public void ReleaseIdle(object token)
         {
             if (!_idleSuppressors.Remove(token))
@@ -212,6 +246,8 @@ namespace Opportunv.LiveCursor
             }
         }
 
+        /// <summary>Shows every frame of the current size once, so later changes skip the OS's first-use cost. Call it
+        /// during a loading screen; it can take a few hundred milliseconds.</summary>
         public void Warm()
         {
             if (_sizeIndex < 0)
@@ -232,12 +268,15 @@ namespace Opportunv.LiveCursor
             Refresh();
         }
 
+        /// <summary>Sends the current frame to the output again, for example after the application regains
+        /// focus.</summary>
         public void Refresh()
         {
             _appliedTexture = null;
             Apply();
         }
 
+        /// <summary>Restores the default cursor without changing the playback state.</summary>
         public void Clear()
         {
             _appliedTexture = null;

@@ -82,7 +82,7 @@ namespace Opportunv.LiveCursor.Tests.Editor
             _player.SetSet(other);
 
             Assert.That(_player.CurrentState, Is.EqualTo(_default));
-            Assert.That(_player.RequestedState, Is.EqualTo(_busy));
+            Assert.That(_player.BaseState, Is.EqualTo(_busy));
         }
 
         [Test]

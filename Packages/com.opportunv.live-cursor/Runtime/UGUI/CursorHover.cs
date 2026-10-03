@@ -3,15 +3,23 @@ using UnityEngine.EventSystems;
 
 namespace Opportunv.LiveCursor.UGUI
 {
+    /// <summary>Requests a cursor state while the pointer is over this uGUI element or collider, and an optional
+    /// pressed state, one priority higher, while the left button is held. Colliders need a physics raycaster on the
+    /// camera.</summary>
     [AddComponentMenu("Live Cursor/Cursor Hover")]
     public sealed class CursorHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler,
         IPointerUpHandler
     {
-        [SerializeField] private CursorAnimator _animator;
-        [SerializeField, CursorStateName] private string _state;
-        [SerializeField, CursorStateName(true)] private string _pressedState;
-        [SerializeField] private int _priority;
+        [SerializeField, Tooltip("The animator to use. When empty, the first one in the scene is used.")]
+        private CursorAnimator _animator;
+        [SerializeField, CursorStateName, Tooltip("The state shown while the pointer is over this object.")]
+        private string _state;
+        [SerializeField, CursorStateName(true), Tooltip("The state shown while the left button is held. Optional.")]
+        private string _pressedState;
+        [SerializeField, Tooltip("Requests with a higher priority win over this one.")]
+        private int _priority;
 
+        /// <summary>The animator to make requests on. When empty, the first one found in the scene is used.</summary>
         public CursorAnimator Animator
         {
             get => _animator;
@@ -22,8 +30,10 @@ namespace Opportunv.LiveCursor.UGUI
             }
         }
 
+        /// <summary>Whether the hover request is active.</summary>
         public bool IsHovered => _hover.IsActive;
 
+        /// <summary>Whether the pressed request is active.</summary>
         public bool IsPressed => _press.IsActive;
 
         private CursorStateId _stateId;
@@ -31,6 +41,7 @@ namespace Opportunv.LiveCursor.UGUI
         private CursorRequest _hover;
         private CursorRequest _press;
 
+        /// <summary>Sets the animator, states and priority from code.</summary>
         public void Configure(CursorAnimator animator, CursorStateId state, CursorStateId pressedState = default,
             int priority = 0)
         {
@@ -42,6 +53,7 @@ namespace Opportunv.LiveCursor.UGUI
             CacheIds();
         }
 
+        /// <summary>Requests the hover state.</summary>
         public void OnPointerEnter(PointerEventData eventData)
         {
             if (!_hover.IsActive && _stateId.IsValid && ResolveAnimator())
@@ -50,11 +62,13 @@ namespace Opportunv.LiveCursor.UGUI
             }
         }
 
+        /// <summary>Releases the hover and pressed states.</summary>
         public void OnPointerExit(PointerEventData eventData)
         {
             ReleaseAll();
         }
 
+        /// <summary>Requests the pressed state.</summary>
         public void OnPointerDown(PointerEventData eventData)
         {
             if (eventData.button == PointerEventData.InputButton.Left && !_press.IsActive &&
@@ -64,6 +78,7 @@ namespace Opportunv.LiveCursor.UGUI
             }
         }
 
+        /// <summary>Releases the pressed state.</summary>
         public void OnPointerUp(PointerEventData eventData)
         {
             if (eventData.button == PointerEventData.InputButton.Left)

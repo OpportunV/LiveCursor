@@ -5,11 +5,15 @@ using UnityEngine;
 
 namespace Opportunv.LiveCursor.Editor
 {
+    /// <summary>Imports <c>.cursorset</c> files into <see cref="CursorSet"/> assets, baking every frame for every
+    /// listed size.</summary>
     [ScriptedImporter(3, Extension)]
     public sealed class CursorSetImporter : ScriptedImporter
     {
+        /// <summary>The file extension handled by the importer, without the dot.</summary>
         public const string Extension = "cursorset";
 
+        /// <summary>Bakes the cursor set described by the imported file.</summary>
         public override void OnImportAsset(AssetImportContext ctx)
         {
             CursorImportReport report = new();
