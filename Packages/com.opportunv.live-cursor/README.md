@@ -5,7 +5,7 @@ Animated hardware (OS) cursors for Unity with zero added input lag.
 - Looping cursor states (Default, Grab, Busy, ... you name them).
 - Authored transitions between states that can play in reverse at their own speed.
 - Changing state mid-transition turns playback around from the current frame.
-- Frames baked for several sizes; the closest to the system cursor size is used.
+- Frames pre-scaled with a high-quality filter to the system cursor size, so Unity never resamples them.
 - No dependencies, no input handling required, no allocations during playback.
 
 Status: early development.
@@ -127,6 +127,8 @@ themselves never need special import settings. You can also write the file by ha
 | Field | Meaning |
 |---|---|
 | `sizes` | Square sizes to bake, in pixels. At runtime the smallest size that covers the system cursor size is used. Default `[32, 48, 64]`. |
+
+On Windows, Unity creates every hardware cursor at the system cursor size: 32 px unless Windows was signed in at a higher display scale (48 px at 150%, 64 px at 200%). Windows then enlarges the cursor on screen for the current display scale and pointer size. Baking that exact size lets Live Cursor's filter do the downscaling instead of Unity's.
 | `hotspot` | Click point in source pixels, measured from the top-left corner. It is scaled for every size. |
 | `states[].hotspot` | Optional click point for one state, overriding the set's `hotspot`. |
 | `transitions[].hotspot` | Optional fixed click point for a transition. Without it, the click point moves frame by frame from the source state's to the destination's. |
