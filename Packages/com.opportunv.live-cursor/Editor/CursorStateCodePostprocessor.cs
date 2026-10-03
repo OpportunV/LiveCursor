@@ -8,13 +8,9 @@ namespace Opportunv.LiveCursor.Editor
 {
     internal sealed class CursorStateCodePostprocessor : AssetPostprocessor
     {
-        public static void Regenerate(string codePath)
+        public static List<CursorStateCodeTarget> FindTargets()
         {
-            List<string> stateNames = new();
-            List<string> sources = new();
-            string className = null;
-            string @namespace = null;
-
+            List<CursorStateCodeTarget> targets = new();
             foreach (var guid in AssetDatabase.FindAssets($"t:{nameof(CursorSet)}"))
             {
                 var assetPath = AssetDatabase.GUIDToAssetPath(guid);
@@ -24,39 +20,51 @@ namespace Opportunv.LiveCursor.Editor
                 }
 
                 var definition = TryRead(assetPath);
-                if (definition == null || ResolveCodePath(assetPath, definition) != codePath)
+                var codePath = definition != null ? ResolveCodePath(assetPath, definition) : null;
+                if (codePath == null)
                 {
                     continue;
                 }
 
-                if (className == null)
+                var target = targets.Find(candidate => candidate.CodePath == codePath);
+                if (target == null)
                 {
-                    className = definition.code.className;
-                    @namespace = definition.code.@namespace;
+                    target = new(codePath, definition.code.className, definition.code.@namespace);
+                    targets.Add(target);
                 }
-                else if (className != definition.code.className || @namespace != definition.code.@namespace)
+                else if (target.ClassName != definition.code.className ||
+                         target.Namespace != (definition.code.@namespace ?? string.Empty))
                 {
                     Debug.LogWarning(
-                        $"[Live Cursor] '{assetPath}' writes state constants to '{codePath}' with a different class name or namespace; using {@namespace}.{className}.");
+                        $"[Live Cursor] '{assetPath}' writes state constants to '{codePath}' with a different class name or namespace; using {target.FullName}.");
                 }
 
-                sources.Add(Path.GetFileName(assetPath));
-                foreach (var state in definition.states ?? Array.Empty<CursorStateDefinition>())
-                {
-                    if (!string.IsNullOrEmpty(state.name) && !stateNames.Contains(state.name))
-                    {
-                        stateNames.Add(state.name);
-                    }
-                }
+                target.Add(assetPath, definition);
             }
 
-            if (className == null || !CursorStateCodeGenerator.IsValidIdentifier(className))
+            targets.Sort((left, right) => string.CompareOrdinal(left.CodePath, right.CodePath));
+            return targets;
+        }
+
+        public static void Regenerate(string codePath)
+        {
+            var target = FindTargets().Find(candidate => candidate.CodePath == codePath);
+            if (target == null || !CursorStateCodeGenerator.IsValidIdentifier(target.ClassName))
             {
                 return;
             }
 
+            WarnMissingStates(target);
+
+            List<string> sources = new();
+            foreach (var setPath in target.SetPaths)
+            {
+                sources.Add(Path.GetFileName(setPath));
+            }
+
             sources.Sort(StringComparer.Ordinal);
-            var code = CursorStateCodeGenerator.Generate(className, @namespace, stateNames, sources);
+            var code = CursorStateCodeGenerator.Generate(target.ClassName, target.Namespace, target.StateNames,
+                sources);
             if (File.Exists(codePath) && File.ReadAllText(codePath) == code)
             {
                 return;
@@ -89,6 +97,23 @@ namespace Opportunv.LiveCursor.Editor
             foreach (var codePath in codePaths)
             {
                 Regenerate(codePath);
+            }
+        }
+
+        private static void WarnMissingStates(CursorStateCodeTarget target)
+        {
+            for (var i = 0; i < target.SetPaths.Count; i++)
+            {
+                var missing = target.MissingStates(i);
+                if (missing.Count == 0)
+                {
+                    continue;
+                }
+
+                var setPath = target.SetPaths[i];
+                Debug.LogWarning(
+                    $"[Live Cursor] '{Path.GetFileName(setPath)}' shares {target.FullName} but has no {string.Join(", ", missing)} state; setting it will be ignored while this set is active.",
+                    AssetDatabase.LoadMainAssetAtPath(setPath));
             }
         }
 

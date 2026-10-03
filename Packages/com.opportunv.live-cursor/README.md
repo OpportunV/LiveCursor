@@ -28,7 +28,10 @@ Status: early development.
    _cursor.SetState(CursorStates.Grab);
    ```
 
-   The class is regenerated whenever the set is imported; several sets can share one class.
+   The class is named after the set by default and regenerated whenever the set is imported. It also
+   has an `All` list of every state. Interchangeable sets, such as skins picked in a settings menu,
+   should share one class (**Share with**), so game code never depends on which set is active; a
+   warning lists any state one of them lacks.
 
 Reopen a set later with **Edit in Cursor Set Builder** on its Inspector.
 

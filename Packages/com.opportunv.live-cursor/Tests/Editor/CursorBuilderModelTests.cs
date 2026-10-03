@@ -148,6 +148,28 @@ namespace Opportunv.LiveCursor.Tests.Editor
         }
 
         [Test]
+        public void FromFolder_NamesClassAfterSet()
+        {
+            var model = CursorBuilderModel.FromFolder(Folder);
+
+            Assert.That(model.ClassName, Is.EqualTo("Set"));
+            Assert.That(model.CodePath, Is.EqualTo($"{Folder}/Set.cs"));
+        }
+
+        [Test]
+        public void ShareWith_CopiesTarget()
+        {
+            var model = CursorBuilderModel.FromFolder(Folder);
+            CursorStateCodeTarget target = new("Assets/Code/CursorStates.cs", "CursorStates", "Game.UI");
+
+            model.ShareWith(target);
+
+            Assert.That(model.ClassName, Is.EqualTo("CursorStates"));
+            Assert.That(model.Namespace, Is.EqualTo("Game.UI"));
+            Assert.That(model.CodePath, Is.EqualTo("Assets/Code/CursorStates.cs"));
+        }
+
+        [Test]
         public void RenameClass_RenamesMatchingFile()
         {
             var model = CursorBuilderModel.FromFolder(Folder);

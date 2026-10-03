@@ -14,4 +14,6 @@ All notable changes to this package are documented here. The format follows
   linear-light premultiplied downscale, plus art-rule checks.
 - Cursor Set Builder window: scans a folder, detects states and transitions, picks the hotspot
   and writes the `.cursorset`.
-- Generated state constants (`CursorStateId` fields) kept in sync on import.
+- Generated state constants (`CursorStateId` fields and an `All` list) kept in sync on import, with
+  sharing between sets and a warning for states a sharing set lacks.
+- Cursor sets show their first frame as their icon in the Project window.

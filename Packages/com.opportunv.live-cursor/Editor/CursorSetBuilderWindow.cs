@@ -18,6 +18,7 @@ namespace Opportunv.LiveCursor.Editor
         private const float StateNameWidth = 150f;
         private const float StateDropdownWidth = 130f;
         private const int MaxMessages = 30;
+        private const string OwnClassChoice = "Own class";
 
         private static readonly Color _mutedText = new(0.6f, 0.6f, 0.6f);
         private static readonly Color _previewBackground = new(0.16f, 0.16f, 0.16f);
@@ -393,46 +394,93 @@ namespace Opportunv.LiveCursor.Editor
         {
             var section = Section("State constants");
             section.Add(Muted(
-                "Generates a static class with a CursorStateId field per state, regenerated on every import. Several sets can share one class."));
+                "Generates a static class with a CursorStateId field per state, regenerated on every import. Interchangeable sets, such as skins picked in settings, should share one class."));
 
+            List<CursorStateCodeTarget> targets = new();
+            List<string> shareChoices = new() { OwnClassChoice };
+            foreach (var target in CursorStateCodePostprocessor.FindTargets())
+            {
+                if (target.SetPaths.Count == 1 && target.SetPaths[0] == _model.OutputPath)
+                {
+                    continue;
+                }
+
+                targets.Add(target);
+                shareChoices.Add($"{target.FullName}  ({string.Join(", ", target.SetPaths.ConvertAll(Path.GetFileName))})");
+            }
+
+            DropdownField share = new("Share with", shareChoices, SharedChoice(targets, shareChoices));
             TextField className = new("Class name") { value = _model.ClassName, isDelayed = true };
             TextField @namespace = new("Namespace") { value = _model.Namespace, isDelayed = true };
             TextField path = new("File") { value = _model.CodePath, isDelayed = true };
+
+            void SyncFields()
+            {
+                className.SetValueWithoutNotify(_model.ClassName);
+                @namespace.SetValueWithoutNotify(_model.Namespace);
+                path.SetValueWithoutNotify(_model.CodePath);
+                share.SetValueWithoutNotify(SharedChoice(targets, shareChoices));
+                RefreshMessages();
+            }
+
+            void SetFieldsEnabled(bool enabled)
+            {
+                share.SetEnabled(enabled && targets.Count > 0);
+                className.SetEnabled(enabled);
+                @namespace.SetEnabled(enabled);
+                path.SetEnabled(enabled);
+            }
 
             Toggle generate = new("Generate") { value = _model.GenerateCode };
             generate.RegisterValueChangedCallback(evt =>
             {
                 _model.GenerateCode = evt.newValue;
-                className.SetEnabled(evt.newValue);
-                @namespace.SetEnabled(evt.newValue);
-                path.SetEnabled(evt.newValue);
+                SetFieldsEnabled(evt.newValue);
                 RefreshMessages();
             });
 
+            share.RegisterValueChangedCallback(evt =>
+            {
+                var index = shareChoices.IndexOf(evt.newValue) - 1;
+                if (index >= 0)
+                {
+                    _model.ShareWith(targets[index]);
+                }
+                else
+                {
+                    _model.NameClassAfterOutput();
+                }
+
+                SyncFields();
+            });
             className.RegisterValueChangedCallback(evt =>
             {
                 _model.RenameClass(evt.newValue.Trim());
-                path.SetValueWithoutNotify(_model.CodePath);
-                RefreshMessages();
+                SyncFields();
             });
             @namespace.RegisterValueChangedCallback(evt =>
             {
                 _model.Namespace = evt.newValue.Trim();
-                RefreshMessages();
+                SyncFields();
             });
             path.RegisterValueChangedCallback(evt =>
             {
                 _model.CodePath = evt.newValue.Trim().Replace('\\', '/');
-                RefreshMessages();
+                SyncFields();
             });
 
-            className.SetEnabled(_model.GenerateCode);
-            @namespace.SetEnabled(_model.GenerateCode);
-            path.SetEnabled(_model.GenerateCode);
+            SetFieldsEnabled(_model.GenerateCode);
             section.Add(generate);
+            section.Add(share);
             section.Add(className);
             section.Add(@namespace);
             section.Add(path);
+        }
+
+        private string SharedChoice(List<CursorStateCodeTarget> targets, List<string> shareChoices)
+        {
+            var index = targets.FindIndex(target => target.CodePath == _model.CodePath);
+            return shareChoices[index + 1];
         }
 
         private void RenameState(CursorBuilderState state, string newName)

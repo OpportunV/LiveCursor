@@ -51,6 +51,37 @@ namespace Opportunv.LiveCursor.Tests.Editor
             Assert.That(code, Does.Contain("GrabHand2 = new(\"Grab Hand\")"));
         }
 
+        [Test]
+        public void Generate_ListsAllStates()
+        {
+            var code = CursorStateCodeGenerator.Generate("CursorStates", string.Empty, new[] { "Default", "All" },
+                new[] { "Set.cursorset" });
+
+            Assert.That(code, Does.Contain("All2 = new(\"All\")"));
+            Assert.That(code, Does.Contain("IReadOnlyList<CursorStateId> All = new[] { Default, All2 };"));
+        }
+
+        [Test]
+        public void Generate_RenamesAllListWhenClassIsNamedAll()
+        {
+            var code = CursorStateCodeGenerator.Generate("All", string.Empty, new[] { "Default" },
+                new[] { "Set.cursorset" });
+
+            Assert.That(code, Does.Contain("IReadOnlyList<CursorStateId> AllStates = new[] { Default };"));
+        }
+
+        [Test]
+        public void Target_ReportsStatesMissingFromSet()
+        {
+            CursorStateCodeTarget target = new("Assets/CursorStates.cs", "CursorStates", null);
+            target.Add("Prism.cursorset", Definition("Default", "Busy", "Grab"));
+            target.Add("Shard.cursorset", Definition("Default", "Grab"));
+
+            Assert.That(target.StateNames, Is.EqualTo(new[] { "Default", "Busy", "Grab" }));
+            Assert.That(target.MissingStates(0), Is.Empty);
+            Assert.That(target.MissingStates(1), Is.EqualTo(new[] { "Busy" }));
+        }
+
         [TestCase("Game.UI", true)]
         [TestCase("Game..UI", false)]
         [TestCase("1Game", false)]
@@ -58,6 +89,17 @@ namespace Opportunv.LiveCursor.Tests.Editor
         public void IsValidNamespace(string value, bool expected)
         {
             Assert.That(CursorStateCodeGenerator.IsValidNamespace(value), Is.EqualTo(expected));
+        }
+
+        private static CursorSetDefinition Definition(params string[] stateNames)
+        {
+            var states = new CursorStateDefinition[stateNames.Length];
+            for (var i = 0; i < stateNames.Length; i++)
+            {
+                states[i] = new() { name = stateNames[i] };
+            }
+
+            return new() { states = states };
         }
     }
 }

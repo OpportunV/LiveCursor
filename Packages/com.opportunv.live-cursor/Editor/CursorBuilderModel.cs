@@ -10,7 +10,6 @@ namespace Opportunv.LiveCursor.Editor
     {
         public const float DefaultStateFrameMs = 100f;
         public const float DefaultTransitionFrameMs = 33f;
-        public const string DefaultClassName = "CursorStates";
 
         public string SourceFolder { get; private set; }
 
@@ -26,7 +25,7 @@ namespace Opportunv.LiveCursor.Editor
 
         public bool GenerateCode { get; set; }
 
-        public string ClassName { get; set; } = DefaultClassName;
+        public string ClassName { get; set; }
 
         public string Namespace { get; set; } = string.Empty;
 
@@ -39,9 +38,9 @@ namespace Opportunv.LiveCursor.Editor
             CursorBuilderModel model = new()
             {
                 SourceFolder = folder,
-                OutputPath = $"{folder}/{folderName}.{CursorSetImporter.Extension}",
-                CodePath = $"{folder}/{DefaultClassName}.cs"
+                OutputPath = $"{folder}/{folderName}.{CursorSetImporter.Extension}"
             };
+            model.NameClassAfterOutput();
 
             var clips = CursorFolderScanner.Scan(folder);
             List<string> allNames = new();
@@ -85,6 +84,7 @@ namespace Opportunv.LiveCursor.Editor
             var folder = Path.GetDirectoryName(definitionPath)?.Replace('\\', '/') ?? string.Empty;
             var model = FromFolder(folder);
             model.OutputPath = definitionPath.Replace('\\', '/');
+            model.NameClassAfterOutput();
             var definition = JsonUtility.FromJson<CursorSetDefinition>(File.ReadAllText(definitionPath));
             if (definition != null && model.MatchesAnyClip(definition))
             {
@@ -92,6 +92,19 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             return model;
+        }
+
+        public void NameClassAfterOutput()
+        {
+            ClassName = CursorStateCodeGenerator.ToIdentifier(Path.GetFileNameWithoutExtension(OutputPath));
+            CodePath = $"{OutputDirectory()}/{ClassName}.cs";
+        }
+
+        public void ShareWith(CursorStateCodeTarget target)
+        {
+            ClassName = target.ClassName;
+            Namespace = target.Namespace;
+            CodePath = target.CodePath;
         }
 
         public void RenameClass(string className)
@@ -145,7 +158,7 @@ namespace Opportunv.LiveCursor.Editor
             if (definition.code != null && !string.IsNullOrEmpty(definition.code.path))
             {
                 GenerateCode = true;
-                ClassName = string.IsNullOrEmpty(definition.code.className) ? DefaultClassName : definition.code.className;
+                ClassName = string.IsNullOrEmpty(definition.code.className) ? ClassName : definition.code.className;
                 Namespace = definition.code.@namespace ?? string.Empty;
                 CodePath = Resolve(directory, definition.code.path);
             }

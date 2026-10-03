@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace Opportunv.LiveCursor.Editor
 {
-    [ScriptedImporter(1, Extension)]
+    [ScriptedImporter(2, Extension)]
     public sealed class CursorSetImporter : ScriptedImporter
     {
         public const string Extension = "cursorset";
@@ -36,7 +36,7 @@ namespace Opportunv.LiveCursor.Editor
                 ctx.AddObjectToAsset(texture.name, texture);
             }
 
-            ctx.AddObjectToAsset("CursorSet", set);
+            ctx.AddObjectToAsset("CursorSet", set, FindIcon(set));
             ctx.SetMainObject(set);
 
             foreach (var error in report.Errors)
@@ -48,6 +48,17 @@ namespace Opportunv.LiveCursor.Editor
             {
                 ctx.LogImportWarning(warning, set);
             }
+        }
+
+        private static Texture2D FindIcon(CursorSet set)
+        {
+            if (set.StateCount == 0 || set.SizeCount == 0)
+            {
+                return null;
+            }
+
+            var loop = set.GetState(0).Loop;
+            return loop is { FrameCount: > 0 } ? loop.GetFrame(0).GetTexture(set.SizeCount - 1) : null;
         }
 
         private static CursorSetDefinition Parse(string assetPath, CursorImportReport report)
