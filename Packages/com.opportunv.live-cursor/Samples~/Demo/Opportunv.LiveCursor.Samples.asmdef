@@ -1,0 +1,16 @@
+{
+    "name": "Opportunv.LiveCursor.Samples",
+    "rootNamespace": "Opportunv.LiveCursor.Samples",
+    "references": [
+        "Opportunv.LiveCursor"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -22,7 +22,7 @@ Animated hardware (OS) cursors for Unity with zero added input lag.
 In **Window > Package Manager**, choose **+ > Install package from git URL** and enter:
 
 ```
-https://github.com/OpportunV/live-cursor.git?path=Packages/com.opportunv.live-cursor
+https://github.com/OpportunV/LiveCursor.git?path=Packages/com.opportunv.live-cursor
 ```
 
 ## Quick start

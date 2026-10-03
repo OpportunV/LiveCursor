@@ -1,0 +1,190 @@
+{
+  "sizes": [
+    32,
+    48,
+    64
+  ],
+  "hotspot": [
+    12,
+    10
+  ],
+  "states": [
+    {
+      "name": "Default",
+      "frames": {
+        "folder": "Idle/Default"
+      },
+      "frameDurationMs": 110
+    },
+    {
+      "name": "Pointer",
+      "frames": {
+        "folder": "Idle/Pointer"
+      },
+      "frameDurationMs": 90,
+      "hotspot": [
+        47,
+        11
+      ]
+    },
+    {
+      "name": "Text",
+      "frames": {
+        "folder": "Idle/Text"
+      },
+      "frameDurationMs": 100,
+      "hotspot": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "Busy",
+      "frames": {
+        "sheet": "Idle/Busy_4x2.png",
+        "columns": 4,
+        "rows": 2,
+        "count": 8
+      },
+      "frameDurationMs": 70,
+      "hotspot": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "Blocked",
+      "frames": {
+        "folder": "Idle/Blocked"
+      },
+      "frameDurationMs": 110,
+      "hotspot": [
+        64,
+        64
+      ]
+    },
+    {
+      "name": "Grab",
+      "frames": {
+        "folder": "Idle/Grab"
+      },
+      "frameDurationMs": 110,
+      "hotspot": [
+        62,
+        72
+      ]
+    },
+    {
+      "name": "Grabbing",
+      "frames": {
+        "folder": "Idle/Grabbing"
+      },
+      "frameDurationMs": 120,
+      "hotspot": [
+        62,
+        72
+      ]
+    },
+    {
+      "name": "Crosshair",
+      "frames": {
+        "sheet": "Idle/Crosshair_4x2.png",
+        "columns": 4,
+        "rows": 2,
+        "count": 8
+      },
+      "frameDurationMs": 90,
+      "hotspot": [
+        64,
+        64
+      ]
+    }
+  ],
+  "transitions": [
+    {
+      "from": "Default",
+      "to": "Pointer",
+      "frames": {
+        "folder": "Transitions/DefaultToPointer"
+      },
+      "frameDurationMs": 30,
+      "includesEndpoints": true,
+      "reversible": true
+    },
+    {
+      "from": "Default",
+      "to": "Text",
+      "frames": {
+        "folder": "Transitions/DefaultToText"
+      },
+      "frameDurationMs": 30,
+      "includesEndpoints": true,
+      "reversible": true
+    },
+    {
+      "from": "Default",
+      "to": "Busy",
+      "frames": {
+        "folder": "Transitions/DefaultToBusy"
+      },
+      "frameDurationMs": 30,
+      "includesEndpoints": true,
+      "reversible": true
+    },
+    {
+      "from": "Default",
+      "to": "Blocked",
+      "frames": {
+        "folder": "Transitions/DefaultToBlocked"
+      },
+      "frameDurationMs": 30,
+      "includesEndpoints": true,
+      "reversible": true
+    },
+    {
+      "from": "Default",
+      "to": "Crosshair",
+      "frames": {
+        "folder": "Transitions/DefaultToCrosshair"
+      },
+      "frameDurationMs": 30,
+      "includesEndpoints": true,
+      "reversible": true
+    },
+    {
+      "from": "Default",
+      "to": "Grab",
+      "frames": {
+        "folder": "Transitions/DefaultToGrab"
+      },
+      "frameDurationMs": 30,
+      "includesEndpoints": true,
+      "reversible": true
+    },
+    {
+      "from": "Pointer",
+      "to": "Grab",
+      "frames": {
+        "folder": "Transitions/PointerToGrab"
+      },
+      "frameDurationMs": 30,
+      "includesEndpoints": true,
+      "reversible": true
+    },
+    {
+      "from": "Grab",
+      "to": "Grabbing",
+      "frames": {
+        "folder": "Transitions/GrabToGrabbing"
+      },
+      "frameDurationMs": 30,
+      "includesEndpoints": true,
+      "reversible": true
+    }
+  ],
+  "code": {
+    "className": "DemoCursorStates",
+    "namespace": "Opportunv.LiveCursor.Samples",
+    "path": "../DemoCursorStates.cs"
+  }
+}
