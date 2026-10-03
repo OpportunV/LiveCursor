@@ -32,4 +32,4 @@ Open it with Unity 6000.0 or newer.
 
 ## License
 
-MIT. See [LICENSE.md](Packages/com.opportunv.live-cursor/LICENSE.md).
+MIT. See [LICENSE.md](LICENSE.md).
