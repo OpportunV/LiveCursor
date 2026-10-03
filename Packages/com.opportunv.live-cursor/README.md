@@ -16,7 +16,10 @@ Status: early development.
    (`Idle/Default/Frame_000.png`, ...) and one per transition, named after the two states
    (`DefaultToGrab`, `Default_to_Grab`, `default-to-grab`, `Default-Grab`, ...).
    A folder of differently named single PNGs (`Default.png`, `Grab.png`) becomes one
-   single-frame state per file.
+   single-frame state per file. Sprite sheets work too: name them with their grid,
+   `Grab_4x2.png`, or `Grab_4x2_7.png` when only 7 cells are used (cells are read left to
+   right, top to bottom). For any other single image, type the layout (`4x2`, `4x2:7`) into
+   its **Frames** field in the builder.
 2. Right-click the folder and choose **Live Cursor > Build Cursor Set From Folder**
    (or **Assets > Create > Live Cursor > Cursor Set**).
 3. In the builder, click the frame to set the hotspot, untick anything you do not want,

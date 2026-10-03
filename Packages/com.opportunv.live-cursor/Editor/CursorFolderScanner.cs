@@ -90,7 +90,8 @@ namespace Opportunv.LiveCursor.Editor
             foreach (var file in files)
             {
                 var name = Path.GetFileNameWithoutExtension(file);
-                if (name.Length == 0 || !char.IsDigit(name[^1]))
+                if (name.Length == 0 || !char.IsDigit(name[^1]) ||
+                    CursorSheetLayout.TryParseFileName(name, out _, out _))
                 {
                     return false;
                 }
@@ -100,6 +101,20 @@ namespace Opportunv.LiveCursor.Editor
         }
 
         private static CursorScannedClip CreateClip(string name, string folder, string[] files)
+        {
+            var clip = ReadClip(name, folder, files);
+            if (!clip.CanBeSheet ||
+                !CursorSheetLayout.TryParseFileName(Path.GetFileNameWithoutExtension(files[0]), out var sheetName,
+                    out var layout) ||
+                !layout.Fits(clip.Width, clip.Height))
+            {
+                return clip;
+            }
+
+            return new(folder == null ? sheetName : name, folder, files, clip.Width, clip.Height, null, layout);
+        }
+
+        private static CursorScannedClip ReadClip(string name, string folder, string[] files)
         {
             var width = 0;
             var height = 0;
@@ -146,7 +161,7 @@ namespace Opportunv.LiveCursor.Editor
                     name = $"{parent}{clip.Name}{suffix++}";
                 }
 
-                clips[i] = new(name, clip.Folder, clip.FramePaths, clip.Width, clip.Height, clip.Problem);
+                clips[i] = new(name, clip.Folder, clip.FramePaths, clip.Width, clip.Height, clip.Problem, clip.Sheet);
             }
         }
     }

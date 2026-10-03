@@ -17,3 +17,4 @@ All notable changes to this package are documented here. The format follows
 - Generated state constants (`CursorStateId` fields and an `All` list) kept in sync on import, with
   sharing between sets and a warning for states a sharing set lacks.
 - Cursor sets show their first frame as their icon in the Project window.
+- Cursor Set Builder reads sprite sheets, detected from names like `Grab_4x2.png` or set per row.

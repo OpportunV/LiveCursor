@@ -123,22 +123,11 @@ namespace Opportunv.LiveCursor.Editor
                 return false;
             }
 
-            var cellWidth = sheet.width / frames.columns;
-            var cellHeight = sheet.height / frames.rows;
-            var cells = frames.columns * frames.rows;
-            var count = frames.count > 0 ? Mathf.Min(frames.count, cells) : cells;
-            for (var i = 0; i < count; i++)
+            CursorSheetLayout layout = new(frames.columns, frames.rows, frames.count);
+            for (var i = 0; i < layout.FrameCount; i++)
             {
-                var column = i % frames.columns;
-                var row = i / frames.columns;
-                var x = column * cellWidth;
-                var y = sheet.height - (row + 1) * cellHeight;
-                Texture2D cell = new(cellWidth, cellHeight, TextureFormat.RGBA32, false)
-                {
-                    name = $"{sheet.name}_{i}"
-                };
-                cell.SetPixels(sheet.GetPixels(x, y, cellWidth, cellHeight));
-                cell.Apply(false, false);
+                var cell = CursorClipFrameReader.Crop(sheet, layout.CellRect(i, sheet.width, sheet.height));
+                cell.name = $"{sheet.name}_{i}";
                 _created.Add(cell);
                 output.Add(cell);
             }

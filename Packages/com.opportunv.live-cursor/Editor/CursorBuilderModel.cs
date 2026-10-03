@@ -176,7 +176,7 @@ namespace Opportunv.LiveCursor.Editor
             List<CursorBuilderState> states = new();
             foreach (var definitionState in definition.states ?? Array.Empty<CursorStateDefinition>())
             {
-                var clip = TakeClip(ResolveKey(directory, definitionState.frames), definitionState.name);
+                var clip = TakeClip(directory, definitionState.frames, definitionState.name);
                 CursorBuilderState state = new(clip)
                 {
                     Name = definitionState.name,
@@ -192,7 +192,7 @@ namespace Opportunv.LiveCursor.Editor
             foreach (var definitionTransition in definition.transitions ?? Array.Empty<CursorTransitionDefinition>())
             {
                 var name = $"{definitionTransition.from}To{definitionTransition.to}";
-                var clip = TakeClip(ResolveKey(directory, definitionTransition.frames), name);
+                var clip = TakeClip(directory, definitionTransition.frames, name);
                 CursorBuilderTransition transition = new(clip, definitionTransition.from, definitionTransition.to)
                 {
                     FrameDurationMs = definitionTransition.frameDurationMs,
@@ -291,16 +291,18 @@ namespace Opportunv.LiveCursor.Editor
                 }
             }
 
-            if (reference != null && reference.Width > 0)
+            if (reference != null && reference.FrameWidth > 0)
             {
-                if (reference.Width != reference.Height)
+                var width = reference.FrameWidth;
+                var height = reference.FrameHeight;
+                if (width != height)
                 {
-                    report.Error($"Frames must be square, but the canvas is {reference.Width}x{reference.Height}.");
+                    report.Error($"Frames must be square, but the canvas is {width}x{height}.");
                 }
 
-                if (Hotspot.x < 0 || Hotspot.y < 0 || Hotspot.x >= reference.Width || Hotspot.y >= reference.Height)
+                if (Hotspot.x < 0 || Hotspot.y < 0 || Hotspot.x >= width || Hotspot.y >= height)
                 {
-                    report.Error($"Hotspot ({Hotspot.x}, {Hotspot.y}) is outside the {reference.Width}x{reference.Height} canvas.");
+                    report.Error($"Hotspot ({Hotspot.x}, {Hotspot.y}) is outside the {width}x{height} canvas.");
                 }
             }
 
@@ -322,6 +324,20 @@ namespace Opportunv.LiveCursor.Editor
             if (!IsProjectPath(CodePath) || !CodePath.EndsWith(".cs", StringComparison.OrdinalIgnoreCase))
             {
                 report.Error("The constants file must be inside Assets or Packages and end with .cs.");
+            }
+        }
+
+        public void SetSheet(CursorScannedClip clip, CursorSheetLayout layout)
+        {
+            clip.Sheet = layout;
+            foreach (var transition in Transitions)
+            {
+                var from = States.Find(state => state.Name == transition.From);
+                var to = States.Find(state => state.Name == transition.To);
+                if (transition.Clip == clip || from?.Clip == clip || to?.Clip == clip)
+                {
+                    transition.IncludesEndpoints = DetectEndpoints(transition);
+                }
             }
         }
 
@@ -364,40 +380,47 @@ namespace Opportunv.LiveCursor.Editor
         {
             var from = States.Find(state => state.Name == transition.From);
             var to = States.Find(state => state.Name == transition.To);
-            var frames = transition.Clip.FramePaths;
-            if (from == null || to == null || from.IsMissing || to.IsMissing || frames.Count < 3)
+            var clip = transition.Clip;
+            if (from == null || to == null || from.IsMissing || to.IsMissing || clip.FrameCount < 3)
             {
                 return false;
             }
 
-            return SameImage(frames[0], from.Clip.FramePaths[0]) && SameImage(frames[^1], to.Clip.FramePaths[0]);
+            return SameFrame(clip, 0, from.Clip, 0) && SameFrame(clip, clip.FrameCount - 1, to.Clip, 0);
         }
 
         private bool HasClip(string key)
         {
-            return States.Exists(state => state.Clip.Key == key) ||
-                   Transitions.Exists(transition => transition.Clip.Key == key);
+            return States.Exists(state => state.Clip.Matches(key)) ||
+                   Transitions.Exists(transition => transition.Clip.Matches(key));
         }
 
-        private CursorScannedClip TakeClip(string key, string fallbackName)
+        private CursorScannedClip TakeClip(string directory, CursorFramesDefinition frames, string fallbackName)
         {
-            var stateIndex = States.FindIndex(state => state.Clip.Key == key);
+            var key = ResolveKey(directory, frames);
+            CursorScannedClip clip = null;
+            var stateIndex = States.FindIndex(state => state.Clip.Matches(key));
+            var transitionIndex = Transitions.FindIndex(transition => transition.Clip.Matches(key));
             if (stateIndex >= 0)
             {
-                var clip = States[stateIndex].Clip;
+                clip = States[stateIndex].Clip;
                 States.RemoveAt(stateIndex);
-                return clip;
             }
-
-            var transitionIndex = Transitions.FindIndex(transition => transition.Clip.Key == key);
-            if (transitionIndex >= 0)
+            else if (transitionIndex >= 0)
             {
-                var clip = Transitions[transitionIndex].Clip;
+                clip = Transitions[transitionIndex].Clip;
                 Transitions.RemoveAt(transitionIndex);
-                return clip;
             }
 
-            return new(fallbackName, key, Array.Empty<string>(), 0, 0, $"'{key}' was not found.");
+            if (clip == null)
+            {
+                return new(fallbackName, key, Array.Empty<string>(), 0, 0, $"'{key}' was not found.");
+            }
+
+            clip.Sheet = frames != null && !string.IsNullOrEmpty(frames.sheet)
+                ? new(frames.columns, frames.rows, frames.count)
+                : default;
+            return clip;
         }
 
         private string OutputDirectory()
@@ -408,9 +431,10 @@ namespace Opportunv.LiveCursor.Editor
         private static void CheckClip(CursorScannedClip clip, string label, ref CursorScannedClip reference,
             CursorImportReport report)
         {
-            if (clip.Problem != null)
+            var problem = clip.Problem ?? clip.SheetProblem();
+            if (problem != null)
             {
-                report.Error($"{label}: {clip.Problem}");
+                report.Error($"{label}: {problem}");
                 return;
             }
 
@@ -420,15 +444,26 @@ namespace Opportunv.LiveCursor.Editor
                 return;
             }
 
-            if (clip.Width != reference.Width || clip.Height != reference.Height)
+            if (clip.FrameWidth != reference.FrameWidth || clip.FrameHeight != reference.FrameHeight)
             {
                 report.Error(
-                    $"{label}: frames are {clip.Width}x{clip.Height}, but '{reference.Name}' is {reference.Width}x{reference.Height}.");
+                    $"{label}: frames are {clip.FrameWidth}x{clip.FrameHeight}, but '{reference.Name}' is {reference.FrameWidth}x{reference.FrameHeight}.");
             }
         }
 
         private static CursorFramesDefinition FramesFor(CursorScannedClip clip, string directory)
         {
+            if (clip.IsSheet)
+            {
+                return new()
+                {
+                    sheet = Relative(directory, clip.FramePaths[0]),
+                    columns = clip.Sheet.Columns,
+                    rows = clip.Sheet.Rows,
+                    count = clip.Sheet.Count
+                };
+            }
+
             if (clip.IsFolder)
             {
                 return new() { folder = Relative(directory, clip.Folder) };
@@ -481,22 +516,29 @@ namespace Opportunv.LiveCursor.Editor
                     path.StartsWith("Packages/", StringComparison.Ordinal));
         }
 
-        private static bool SameImage(string leftPath, string rightPath)
+        private static bool SameFrame(CursorScannedClip leftClip, int leftIndex, CursorScannedClip rightClip,
+            int rightIndex)
         {
-            Texture2D left = new(2, 2, TextureFormat.RGBA32, false);
-            Texture2D right = new(2, 2, TextureFormat.RGBA32, false);
+            var left = CursorClipFrameReader.Read(leftClip, leftIndex);
+            var right = CursorClipFrameReader.Read(rightClip, rightIndex);
             try
             {
-                return left.LoadImage(File.ReadAllBytes(leftPath)) &&
-                       right.LoadImage(File.ReadAllBytes(rightPath)) &&
+                return left != null && right != null &&
                        left.width == right.width &&
                        left.height == right.height &&
                        CursorPixelComparer.CountDifferentPixels(left, right) == 0;
             }
             finally
             {
-                Object.DestroyImmediate(left);
-                Object.DestroyImmediate(right);
+                if (left != null)
+                {
+                    Object.DestroyImmediate(left);
+                }
+
+                if (right != null)
+                {
+                    Object.DestroyImmediate(right);
+                }
             }
         }
     }

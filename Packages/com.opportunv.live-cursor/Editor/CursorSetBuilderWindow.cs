@@ -115,7 +115,7 @@ namespace Opportunv.LiveCursor.Editor
             if (_model == null)
             {
                 _content.Add(new HelpBox(
-                    "Choose a folder that contains the cursor frames. Every subfolder with PNG files becomes a state or, when it is named like 'DefaultToGrab', a transition.",
+                    "Choose a folder that contains the cursor frames. Every subfolder of numbered PNGs and every sprite sheet named like 'Grab_4x2.png' becomes a state or, when it is named like 'DefaultToGrab', a transition.",
                     HelpBoxMessageType.Info));
                 return;
             }
@@ -256,7 +256,7 @@ namespace Opportunv.LiveCursor.Editor
             textField.RegisterValueChangedCallback(evt => RenameState(state, evt.newValue));
             row.Add(Fixed(textField, StateNameWidth));
 
-            row.Add(Fixed(new Label(state.IsMissing ? "missing" : state.Clip.FramePaths.Count.ToString()), NumberWidth));
+            row.Add(Fixed(FramesField(state.Clip, state.IsMissing), NumberWidth));
 
             FloatField duration = new() { value = state.FrameDurationMs };
             duration.RegisterValueChangedCallback(evt =>
@@ -331,8 +331,7 @@ namespace Opportunv.LiveCursor.Editor
                 RefreshMessages();
             }), StateDropdownWidth));
 
-            row.Add(Fixed(new Label(transition.IsMissing ? "missing" : transition.Clip.FramePaths.Count.ToString()),
-                NumberWidth));
+            row.Add(Fixed(FramesField(transition.Clip, transition.IsMissing), NumberWidth));
 
             var total = new Label(TotalLabel(transition));
             total.tooltip = "Time from the request until the destination state shows.";
@@ -477,6 +476,35 @@ namespace Opportunv.LiveCursor.Editor
             section.Add(path);
         }
 
+        private VisualElement FramesField(CursorScannedClip clip, bool missing)
+        {
+            if (missing || !clip.CanBeSheet)
+            {
+                return new Label(missing ? "missing" : clip.FrameCount.ToString());
+            }
+
+            TextField field = new() { value = clip.Sheet.ToString(), isDelayed = true };
+            field.tooltip = SheetTooltip(clip);
+            field.RegisterValueChangedCallback(evt =>
+            {
+                var text = evt.newValue.Trim();
+                CursorSheetLayout layout = default;
+                if (text.Length > 0 && text != "1" && !CursorSheetLayout.TryParse(text, out layout))
+                {
+                    field.SetValueWithoutNotify(clip.Sheet.ToString());
+                    return;
+                }
+
+                _model.SetSheet(clip, layout);
+                field.SetValueWithoutNotify(clip.Sheet.ToString());
+                field.tooltip = SheetTooltip(clip);
+                BuildTransitions();
+                RefreshPreview();
+                RefreshMessages();
+            });
+            return field;
+        }
+
         private string SharedChoice(List<CursorStateCodeTarget> targets, List<string> shareChoices)
         {
             var index = targets.FindIndex(target => target.CodePath == _model.CodePath);
@@ -530,12 +558,15 @@ namespace Opportunv.LiveCursor.Editor
                 return;
             }
 
-            _previewTexture = new(2, 2, TextureFormat.RGBA32, false)
+            _previewTexture = CursorClipFrameReader.Read(clip, 0);
+            if (!_previewTexture)
             {
-                filterMode = FilterMode.Point,
-                hideFlags = HideFlags.HideAndDontSave
-            };
-            _previewTexture.LoadImage(File.ReadAllBytes(clip.FramePaths[0]));
+                _previewFrame.style.display = DisplayStyle.None;
+                return;
+            }
+
+            _previewTexture.filterMode = FilterMode.Point;
+            _previewTexture.hideFlags = HideFlags.HideAndDontSave;
             _previewZoom = Mathf.Max(1, Mathf.FloorToInt(PreviewSize / Mathf.Max(_previewTexture.width,
                 _previewTexture.height)));
 
@@ -686,9 +717,16 @@ namespace Opportunv.LiveCursor.Editor
                 : null;
         }
 
+        private static string SheetTooltip(CursorScannedClip clip)
+        {
+            var frames = clip.IsSheet ? $"{clip.FrameCount} frames of {clip.FrameWidth}x{clip.FrameHeight}" : "1 frame";
+            return $"{frames}. Type a sprite sheet layout as columns x rows, optionally with a frame count " +
+                   "for a partly filled last row, e.g. 4x2 or 4x2:7. Type 1 for a single image.";
+        }
+
         private static string TotalLabel(CursorBuilderTransition transition)
         {
-            var frames = transition.Clip.FramePaths.Count - (transition.IncludesEndpoints ? 2 : 0);
+            var frames = transition.Clip.FrameCount - (transition.IncludesEndpoints ? 2 : 0);
             return $"{Mathf.Max(0, frames) * transition.FrameDurationMs:0} ms";
         }
 
