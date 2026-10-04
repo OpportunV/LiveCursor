@@ -15,6 +15,7 @@ namespace Opportunv.LiveCursor.Editor
         [SerializeField] private float _speed = 1f;
         [SerializeField] private bool _paused;
         [SerializeField] private bool _idleDisabled;
+        [SerializeField] private bool _transitionsDisabled;
         [SerializeField] private bool _immediate;
         [SerializeField] private bool _autoCycle;
         [SerializeField] private float _cycleInterval = 1.5f;
@@ -144,6 +145,11 @@ namespace Opportunv.LiveCursor.Editor
                 _idleDisabled = !value;
                 _player.IdleEnabled = value;
             }));
+            playback.Add(ToggleField("Transitions", !_transitionsDisabled, "Play transitions between states.", value =>
+            {
+                _transitionsDisabled = !value;
+                _player.TransitionsEnabled = value;
+            }));
             playback.Add(ToggleField(
                 "Immediate",
                 _immediate,
@@ -241,6 +247,7 @@ namespace Opportunv.LiveCursor.Editor
             _setPath = _set ? AssetDatabase.GetAssetPath(_set) : null;
             _player.SetSet(_set);
             _player.IdleEnabled = !_idleDisabled;
+            _player.TransitionsEnabled = !_transitionsDisabled;
             _cycleElapsed = 0f;
             BuildSizes();
             BuildStateButtons();

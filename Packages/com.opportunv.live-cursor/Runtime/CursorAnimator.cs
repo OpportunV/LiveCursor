@@ -20,6 +20,9 @@ namespace Opportunv.LiveCursor
         [Tooltip("Play each state's loop. When off, states show their first frame.")]
         private bool _idleEnabled = true;
         [SerializeField]
+        [Tooltip("Play transitions between states. When off, every change shows the new state's first frame at once.")]
+        private bool _transitionsEnabled = true;
+        [SerializeField]
         [Tooltip("Show every frame once when a set is assigned, so later changes are instant.")]
         private bool _warmOnSetChange;
         [SerializeField]
@@ -55,6 +58,18 @@ namespace Opportunv.LiveCursor
             {
                 _idleEnabled = value;
                 _player.IdleEnabled = value;
+            }
+        }
+
+        /// <summary>Gets or sets a value indicating whether state changes play transitions. When off, every change
+        /// shows the target state's first frame at once.</summary>
+        public bool TransitionsEnabled
+        {
+            get => _transitionsEnabled;
+            set
+            {
+                _transitionsEnabled = value;
+                _player.TransitionsEnabled = value;
             }
         }
 
@@ -131,6 +146,7 @@ namespace Opportunv.LiveCursor
         private void Awake()
         {
             _player.IdleEnabled = _idleEnabled;
+            _player.TransitionsEnabled = _transitionsEnabled;
             _player.SetSystemCursorSize(ResolveCursorSize());
             if (!string.IsNullOrEmpty(_initialState))
             {
@@ -175,6 +191,7 @@ namespace Opportunv.LiveCursor
             if (Application.isPlaying)
             {
                 _player.IdleEnabled = _idleEnabled;
+                _player.TransitionsEnabled = _transitionsEnabled;
             }
         }
 #endif

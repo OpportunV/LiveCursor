@@ -116,6 +116,10 @@ compiled only when the uGUI package is installed. It works on UI elements and, w
 **Idle**: `IdleEnabled` turns state loops on and off. `SuppressIdle(token)` and `ReleaseIdle(token)` hold them
 temporarily, for example during a cutscene.
 
+**Transitions**: `TransitionsEnabled`, also on the Cursor Animator's Inspector, turns transitions off, for example
+as a reduced-motion setting. Every change then shows the new state's first frame at once, and turning it off
+mid-transition jumps straight to where that transition was heading.
+
 **State names in the Inspector**: mark a `string` field with `[CursorStateName]` to get a dropdown of the states
 in the project's cursor sets; `[CursorStateName(true)]` adds "None".
 

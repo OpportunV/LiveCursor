@@ -6,6 +6,10 @@ All notable changes to this package are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+- `TransitionsEnabled` on `CursorPlayer` and `CursorAnimator`: when off, every state change shows the target state's
+  first frame at once. The Cursor Set Preview has a matching toggle.
+
 ### Changed
 - `immediate: true` starts a change on the same frame without skipping a transition that is already playing.
 - Changing the target mid-transition to a third state switches to the set's direct transition from the origin,

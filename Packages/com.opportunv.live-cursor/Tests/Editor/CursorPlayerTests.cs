@@ -552,6 +552,77 @@ namespace Opportunv.LiveCursor.Tests.Editor
         }
 
         [Test]
+        public void TransitionsDisabled_ChangesShowTargetFirstFrameAtOnce()
+        {
+            _player.SetSet(CreateStandardSet());
+            _player.TransitionsEnabled = false;
+            _entered.Clear();
+
+            _player.SetState(_grab);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Grab", 0)));
+            Assert.That(_player.IsTransitioning, Is.False);
+            Assert.That(_player.CurrentState, Is.EqualTo(_grab));
+            Assert.That(_entered, Is.EqualTo(new[] { _grab }));
+
+            var request = _player.Request(_dragging);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Dragging", 0)));
+            Assert.That(_player.IsTransitioning, Is.False);
+
+            request.Dispose();
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Grab", 0)));
+            Assert.That(_player.IsTransitioning, Is.False);
+            Assert.That(_entered, Is.EqualTo(new[] { _grab, _dragging, _grab }));
+        }
+
+        [Test]
+        public void TransitionsDisabled_MidTransitionJumpsToTarget()
+        {
+            _player.SetSet(CreateStandardSet());
+            _player.SetState(_grab);
+            _player.Tick(TransitionFrame);
+            _player.SetState(_dragging);
+
+            _player.TransitionsEnabled = false;
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Dragging", 0)));
+            Assert.That(_player.IsTransitioning, Is.False);
+            Assert.That(_player.CurrentState, Is.EqualTo(_dragging));
+        }
+
+        [Test]
+        public void TransitionsDisabled_WhileReversingStaysWithoutReentering()
+        {
+            _player.SetSet(CreateStandardSet());
+            _player.SetState(_grab);
+            _player.Tick(TransitionFrame);
+            _player.SetState(_default);
+            _entered.Clear();
+
+            _player.TransitionsEnabled = false;
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Default", 0)));
+            Assert.That(_player.IsTransitioning, Is.False);
+            Assert.That(_entered, Is.Empty);
+        }
+
+        [Test]
+        public void TransitionsReenabled_PlayTransitionsAgain()
+        {
+            _player.SetSet(CreateStandardSet());
+            _player.TransitionsEnabled = false;
+            _player.SetState(_grab);
+
+            _player.TransitionsEnabled = true;
+            _player.SetState(_default);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Default>Grab", 4)));
+            Assert.That(_player.IsTransitioning, Is.True);
+        }
+
+        [Test]
         public void Size_PicksSmallestSizeCoveringSystemCursor()
         {
             var set = _builder.WithSizes(32, 48, 64).AddState("Default", 1, LoopFrame).Build();

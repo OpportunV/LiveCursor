@@ -14,12 +14,11 @@ namespace Opportunv.LiveCursor
         /// <summary>Gets the cursor set being played, or <c>null</c>.</summary>
         public CursorSet Set { get; private set; }
 
-        /// <summary>Gets the state currently shown. During a transition this is the state it started
-        /// from.</summary>
+        /// <summary>Gets the state currently shown. During a transition this is the state it started from.</summary>
         public CursorStateId CurrentState => _stateIndex >= 0 ? Set.GetStateId(_stateIndex) : default;
 
-        /// <summary>Gets the state the cursor is heading to: the current state, or where the running transition
-        /// will end.</summary>
+        /// <summary>Gets the state the cursor is heading to: the current state, or where the running transition will
+        /// end.</summary>
         public CursorStateId TargetState => _stateIndex >= 0 ? Set.GetStateId(TargetStateIndex()) : _requestedState;
 
         /// <summary>Gets the state set with <see cref="SetState(CursorStateId, bool)"/>, shown while no request is
@@ -62,6 +61,31 @@ namespace Opportunv.LiveCursor
             }
         }
 
+        /// <summary>Gets or sets a value indicating whether state changes play transitions. When off, every change
+        /// shows the target state's first frame at once, and turning it off mid-transition jumps to the
+        /// target.</summary>
+        public bool TransitionsEnabled
+        {
+            get => _transitionsEnabled;
+            set
+            {
+                if (_transitionsEnabled == value)
+                {
+                    return;
+                }
+
+                _transitionsEnabled = value;
+                if (value || !_transitioning)
+                {
+                    return;
+                }
+
+                SnapTo(TargetStateIndex());
+                Apply();
+                RaisePendingEvent();
+            }
+        }
+
         private const int MaxStepsPerTick = 4096;
         private const float MinFrameDuration = 0.001f;
 
@@ -87,6 +111,7 @@ namespace Opportunv.LiveCursor
         private float _elapsed;
         private bool _waitingForLoop;
         private bool _idleEnabled = true;
+        private bool _transitionsEnabled = true;
         private bool _stateEnteredPending;
         private Texture2D _appliedTexture;
         private Vector2 _appliedHotspot;
@@ -359,7 +384,14 @@ namespace Opportunv.LiveCursor
                 return;
             }
 
-            if (!_transitioning)
+            if (!_transitionsEnabled)
+            {
+                if (_transitioning || target != _stateIndex)
+                {
+                    SnapTo(target);
+                }
+            }
+            else if (!_transitioning)
             {
                 if (target != _stateIndex)
                 {
@@ -430,6 +462,19 @@ namespace Opportunv.LiveCursor
             if (!keepElapsed)
             {
                 _elapsed = 0f;
+            }
+        }
+
+        private void SnapTo(int target)
+        {
+            var reentering = target == _stateIndex;
+            _transitioning = false;
+            _transition = null;
+            _queuedState = -1;
+            EnterState(target, false);
+            if (reentering)
+            {
+                _stateEnteredPending = false;
             }
         }
 
