@@ -11,13 +11,25 @@ The package lives in [`Packages/com.opportunv.live-cursor`](Packages/com.opportu
 
 ## Installation
 
+### Git URL
+
 In **Window > Package Manager**, choose **+ > Install package from git URL** and enter:
 
 ```
-https://github.com/OpportunV/LiveCursor.git?path=Packages/com.opportunv.live-cursor
+https://github.com/OpportunV/LiveCursor.git?path=Packages/com.opportunv.live-cursor#v1.0.0
 ```
 
-Append a tag, for example `#v0.1.0`, to pin a release.
+Change the tag to pin another release, or remove it to follow `main`.
+
+### OpenUPM
+
+```
+openupm add com.opportunv.live-cursor
+```
+
+Or add the registry by hand in **Edit > Project Settings > Package Manager > Scoped Registries**: URL
+`https://package.openupm.com`, scope `com.opportunv`. Then install **Live Cursor** from **My Registries** in the
+Package Manager.
 
 ## This repository
 
