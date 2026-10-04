@@ -51,9 +51,15 @@ namespace Opportunv.LiveCursor.Editor
         }
 
         [OnOpenAsset]
+#if UNITY_6000_3_OR_NEWER
+        private static bool OpenCursorSet(UnityEngine.EntityId entityId, int line)
+        {
+            var path = AssetDatabase.GetAssetPath(entityId);
+#else
         private static bool OpenCursorSet(int instanceId, int line)
         {
             var path = AssetDatabase.GetAssetPath(instanceId);
+#endif
             if (!path.EndsWith($".{CursorSetImporter.Extension}", StringComparison.OrdinalIgnoreCase))
             {
                 return false;
