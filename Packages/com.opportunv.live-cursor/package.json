@@ -1,6 +1,6 @@
 {
   "name": "com.opportunv.live-cursor",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "displayName": "Live Cursor",
   "description": "Animated hardware (OS) cursors with zero added input lag. Looping cursor states, authored transitions that play in reverse and turn around mid-way, per-state click points, and a builder that turns a folder of frames into a cursor set.",
   "unity": "6000.0",

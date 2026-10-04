@@ -6,6 +6,8 @@ All notable changes to this package are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-10-04
+
 ### Added
 - `TransitionsEnabled` on `CursorPlayer` and `CursorAnimator`: when off, every state change shows the target state's
   first frame at once. The Cursor Set Preview has a matching toggle.
@@ -45,3 +47,7 @@ All notable changes to this package are documented here. The format follows
 - Per-state hotspots; transitions move the click point between their states' hotspots.
 - `CursorHover.Configure` for setting up the component from code.
 - Demo sample with two skins, a UI Toolkit scene and a uGUI and 3D scene.
+
+[Unreleased]: https://github.com/OpportunV/LiveCursor/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/OpportunV/LiveCursor/compare/v0.1.0...v1.0.0
+[0.1.0]: https://github.com/OpportunV/LiveCursor/releases/tag/v0.1.0
