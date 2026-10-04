@@ -26,7 +26,11 @@ def first_frame(skin_folder, state):
 
 
 def font(size, bold=False):
-    names = ["segoeuib.ttf" if bold else "segoeui.ttf", "arialbd.ttf" if bold else "arial.ttf"]
+    names = [
+        "segoeuib.ttf" if bold else "segoeui.ttf",
+        "arialbd.ttf" if bold else "arial.ttf",
+        "LiberationSans-Bold.ttf" if bold else "LiberationSans-Regular.ttf",
+    ]
     for name in names:
         try:
             return ImageFont.truetype(name, size)

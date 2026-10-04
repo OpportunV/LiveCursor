@@ -40,7 +40,7 @@ The repository is the Unity project used to develop the package:
 - `Packages/com.opportunv.live-cursor`: the package, with its tests and the Demo sample.
 - `Assets/LiveCursorSamples`: the editable source of the Demo sample.
 - `Assets/Dev`: development tools (demo scene builder, sample exporter, diagnostics).
-- `Tools`: scripts that generate the demo cursor art and this preview image.
+- `Tools`: scripts that generate the demo cursor art, this preview image and the Asset Store key images.
 
 Open it with Unity 6000.0 or newer.
 
