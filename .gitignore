@@ -43,3 +43,6 @@ Thumbs.db
 /Packages/com.unity.asset-store-tools/
 /Assets/AssetStoreTools/
 /Assets/AssetStoreTools.meta
+
+# Python
+__pycache__/
