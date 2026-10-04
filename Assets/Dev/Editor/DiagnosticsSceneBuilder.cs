@@ -24,7 +24,8 @@ namespace Dev.Editor
             var midnight = AssetDatabase.LoadAssetAtPath<CursorSet>($"{CursorsRoot}/Midnight/Midnight.cursorset");
             if (!twinkle || !midnight)
             {
-                Debug.LogError("[Live Cursor Dev] Demo cursor sets are missing; run Tools/DemoCursors/generate.py first.");
+                Debug.LogError(
+                    "[Live Cursor Dev] Demo cursor sets are missing; run Tools/DemoCursors/generate.py first.");
                 return;
             }
 

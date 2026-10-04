@@ -11,8 +11,6 @@ namespace Opportunv.LiveCursor.Editor
         public const float DefaultStateFrameMs = 100f;
         public const float DefaultTransitionFrameMs = 33f;
 
-        public string SourceFolder { get; private set; }
-
         public string OutputPath { get; set; }
 
         public List<int> Sizes { get; } = new() { 32, 48, 64 };
@@ -37,7 +35,6 @@ namespace Opportunv.LiveCursor.Editor
             var folderName = Path.GetFileName(folder);
             CursorBuilderModel model = new()
             {
-                SourceFolder = folder,
                 OutputPath = $"{folder}/{folderName}.{CursorSetImporter.Extension}"
             };
             model.NameClassAfterOutput();
@@ -119,99 +116,6 @@ namespace Opportunv.LiveCursor.Editor
             ClassName = className;
         }
 
-        public bool MatchesAnyClip(CursorSetDefinition definition)
-        {
-            var directory = OutputDirectory();
-            foreach (var state in definition.states ?? Array.Empty<CursorStateDefinition>())
-            {
-                if (HasClip(ResolveKey(directory, state.frames)))
-                {
-                    return true;
-                }
-            }
-
-            foreach (var transition in definition.transitions ?? Array.Empty<CursorTransitionDefinition>())
-            {
-                if (HasClip(ResolveKey(directory, transition.frames)))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        public void ApplyDefinition(CursorSetDefinition definition)
-        {
-            var directory = OutputDirectory();
-            if (definition.sizes is { Length: > 0 })
-            {
-                Sizes.Clear();
-                Sizes.AddRange(definition.sizes);
-            }
-
-            if (definition.hotspot is { Length: 2 })
-            {
-                Hotspot = new(definition.hotspot[0], definition.hotspot[1]);
-            }
-
-            if (definition.code != null && !string.IsNullOrEmpty(definition.code.path))
-            {
-                GenerateCode = true;
-                ClassName = string.IsNullOrEmpty(definition.code.className) ? ClassName : definition.code.className;
-                Namespace = definition.code.@namespace ?? string.Empty;
-                CodePath = Resolve(directory, definition.code.path);
-            }
-
-            foreach (var state in States)
-            {
-                state.Include = false;
-            }
-
-            foreach (var transition in Transitions)
-            {
-                transition.Include = false;
-            }
-
-            List<CursorBuilderState> states = new();
-            foreach (var definitionState in definition.states ?? Array.Empty<CursorStateDefinition>())
-            {
-                var clip = TakeClip(directory, definitionState.frames, definitionState.name);
-                var ownHotspot = CursorSetDefinitionValidator.HasHotspot(definitionState.hotspot);
-                CursorBuilderState state = new(clip)
-                {
-                    Name = definitionState.name,
-                    FrameDurationMs = definitionState.frameDurationMs,
-                    LoopDelayMs = definitionState.loopDelayMs,
-                    HasOwnHotspot = ownHotspot,
-                    Hotspot = ownHotspot ? new(definitionState.hotspot[0], definitionState.hotspot[1]) : Hotspot
-                };
-                states.Add(state);
-            }
-
-            States.InsertRange(0, states);
-
-            List<CursorBuilderTransition> transitions = new();
-            foreach (var definitionTransition in definition.transitions ?? Array.Empty<CursorTransitionDefinition>())
-            {
-                var name = $"{definitionTransition.from}To{definitionTransition.to}";
-                var clip = TakeClip(directory, definitionTransition.frames, name);
-                CursorBuilderTransition transition = new(clip, definitionTransition.from, definitionTransition.to)
-                {
-                    FrameDurationMs = definitionTransition.frameDurationMs,
-                    Reversible = definitionTransition.reversible,
-                    ReverseFrameDurationMs = definitionTransition.reverseFrameDurationMs,
-                    IncludesEndpoints = definitionTransition.includesEndpoints,
-                    Hotspot = CursorSetDefinitionValidator.HasHotspot(definitionTransition.hotspot)
-                        ? definitionTransition.hotspot
-                        : null
-                };
-                transitions.Add(transition);
-            }
-
-            Transitions.InsertRange(0, transitions);
-        }
-
         public CursorSetDefinition ToDefinition()
         {
             var directory = OutputDirectory();
@@ -276,7 +180,8 @@ namespace Opportunv.LiveCursor.Editor
             if (!IsProjectPath(OutputPath) ||
                 !OutputPath.EndsWith($".{CursorSetImporter.Extension}", StringComparison.OrdinalIgnoreCase))
             {
-                report.Error($"The output file must be inside Assets or Packages and end with .{CursorSetImporter.Extension}.");
+                report.Error("The output file must be inside Assets or Packages and end with " +
+                             $".{CursorSetImporter.Extension}.");
             }
 
             CursorSetDefinitionValidator.Validate(ToDefinition(), report);
@@ -294,12 +199,15 @@ namespace Opportunv.LiveCursor.Editor
             {
                 if (transition.Include)
                 {
-                    CheckClip(transition.Clip, $"Transition '{transition.From}' -> '{transition.To}'", ref reference,
+                    CheckClip(
+                        transition.Clip,
+                        $"Transition '{transition.From}' -> '{transition.To}'",
+                        ref reference,
                         report);
                 }
             }
 
-            if (reference != null && reference.FrameWidth > 0)
+            if (reference is { FrameWidth: > 0 })
             {
                 var width = reference.FrameWidth;
                 var height = reference.FrameHeight;
@@ -393,6 +301,99 @@ namespace Opportunv.LiveCursor.Editor
             return null;
         }
 
+        private bool MatchesAnyClip(CursorSetDefinition definition)
+        {
+            var directory = OutputDirectory();
+            foreach (var state in definition.states ?? Array.Empty<CursorStateDefinition>())
+            {
+                if (HasClip(ResolveKey(directory, state.frames)))
+                {
+                    return true;
+                }
+            }
+
+            foreach (var transition in definition.transitions ?? Array.Empty<CursorTransitionDefinition>())
+            {
+                if (HasClip(ResolveKey(directory, transition.frames)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private void ApplyDefinition(CursorSetDefinition definition)
+        {
+            var directory = OutputDirectory();
+            if (definition.sizes is { Length: > 0 })
+            {
+                Sizes.Clear();
+                Sizes.AddRange(definition.sizes);
+            }
+
+            if (definition.hotspot is { Length: 2 })
+            {
+                Hotspot = new(definition.hotspot[0], definition.hotspot[1]);
+            }
+
+            if (definition.code != null && !string.IsNullOrEmpty(definition.code.path))
+            {
+                GenerateCode = true;
+                ClassName = string.IsNullOrEmpty(definition.code.className) ? ClassName : definition.code.className;
+                Namespace = definition.code.@namespace ?? string.Empty;
+                CodePath = Resolve(directory, definition.code.path);
+            }
+
+            foreach (var state in States)
+            {
+                state.Include = false;
+            }
+
+            foreach (var transition in Transitions)
+            {
+                transition.Include = false;
+            }
+
+            List<CursorBuilderState> states = new();
+            foreach (var definitionState in definition.states ?? Array.Empty<CursorStateDefinition>())
+            {
+                var clip = TakeClip(directory, definitionState.frames, definitionState.name);
+                var ownHotspot = CursorSetDefinitionValidator.HasHotspot(definitionState.hotspot);
+                CursorBuilderState state = new(clip)
+                {
+                    Name = definitionState.name,
+                    FrameDurationMs = definitionState.frameDurationMs,
+                    LoopDelayMs = definitionState.loopDelayMs,
+                    HasOwnHotspot = ownHotspot,
+                    Hotspot = ownHotspot ? new(definitionState.hotspot[0], definitionState.hotspot[1]) : Hotspot
+                };
+                states.Add(state);
+            }
+
+            States.InsertRange(0, states);
+
+            List<CursorBuilderTransition> transitions = new();
+            foreach (var definitionTransition in definition.transitions ?? Array.Empty<CursorTransitionDefinition>())
+            {
+                var name = $"{definitionTransition.from}To{definitionTransition.to}";
+                var clip = TakeClip(directory, definitionTransition.frames, name);
+                CursorBuilderTransition transition = new(clip, definitionTransition.from, definitionTransition.to)
+                {
+                    FrameDurationMs = definitionTransition.frameDurationMs,
+                    Reversible = definitionTransition.reversible,
+                    ReverseFrameDurationMs = definitionTransition.reverseFrameDurationMs,
+                    IncludesEndpoints = definitionTransition.includesEndpoints,
+                    Hotspot = CursorSetDefinitionValidator.HasHotspot(definitionTransition.hotspot)
+                        ? definitionTransition.hotspot
+                        : null
+                };
+                transitions.Add(transition);
+            }
+
+            Transitions.InsertRange(0, transitions);
+        }
+
         private bool DetectEndpoints(CursorBuilderTransition transition)
         {
             var from = States.Find(state => state.Name == transition.From);
@@ -445,7 +446,11 @@ namespace Opportunv.LiveCursor.Editor
             return Path.GetDirectoryName(OutputPath ?? string.Empty)?.Replace('\\', '/') ?? string.Empty;
         }
 
-        private static void CheckHotspot(Vector2Int hotspot, string label, int width, int height,
+        private static void CheckHotspot(
+            Vector2Int hotspot,
+            string label,
+            int width,
+            int height,
             CursorImportReport report)
         {
             if (hotspot.x < 0 || hotspot.y < 0 || hotspot.x >= width || hotspot.y >= height)
@@ -454,7 +459,10 @@ namespace Opportunv.LiveCursor.Editor
             }
         }
 
-        private static void CheckClip(CursorScannedClip clip, string label, ref CursorScannedClip reference,
+        private static void CheckClip(
+            CursorScannedClip clip,
+            string label,
+            ref CursorScannedClip reference,
             CursorImportReport report)
         {
             var problem = clip.Problem ?? clip.SheetProblem();
@@ -473,7 +481,8 @@ namespace Opportunv.LiveCursor.Editor
             if (clip.FrameWidth != reference.FrameWidth || clip.FrameHeight != reference.FrameHeight)
             {
                 report.Error(
-                    $"{label}: frames are {clip.FrameWidth}x{clip.FrameHeight}, but '{reference.Name}' is {reference.FrameWidth}x{reference.FrameHeight}.");
+                    $"{label}: frames are {clip.FrameWidth}x{clip.FrameHeight}, but '{reference.Name}' is " +
+                    $"{reference.FrameWidth}x{reference.FrameHeight}.");
             }
         }
 
@@ -542,7 +551,10 @@ namespace Opportunv.LiveCursor.Editor
                     path.StartsWith("Packages/", StringComparison.Ordinal));
         }
 
-        private static bool SameFrame(CursorScannedClip leftClip, int leftIndex, CursorScannedClip rightClip,
+        private static bool SameFrame(
+            CursorScannedClip leftClip,
+            int leftIndex,
+            CursorScannedClip rightClip,
             int rightIndex)
         {
             var left = CursorClipFrameReader.Read(leftClip, leftIndex);

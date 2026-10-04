@@ -161,7 +161,10 @@ namespace Dev.Diagnostics
             var pattern = _patterns[_patternIndex];
             GUILayout.BeginHorizontal();
             GUILayout.Label("On-screen copy at 1:1 pixels:", GUILayout.Width(220f));
-            var rect = GUILayoutUtility.GetRect(pattern.width, pattern.height, GUILayout.Width(pattern.width),
+            var rect = GUILayoutUtility.GetRect(
+                pattern.width,
+                pattern.height,
+                GUILayout.Width(pattern.width),
                 GUILayout.Height(pattern.height));
             rect.x = Mathf.Round(rect.x);
             rect.y = Mathf.Round(rect.y);
@@ -180,7 +183,8 @@ namespace Dev.Diagnostics
             {
                 for (var column = 0; column < columns; column++)
                 {
-                    var center = new Vector2(Mathf.Round(area.x + TargetSpacing * (column + 1)),
+                    var center = new Vector2(
+                        Mathf.Round(area.x + TargetSpacing * (column + 1)),
                         Mathf.Round(area.y + 30f + TargetSpacing * (row + 0.5f)));
                     DrawTarget(center);
                     if (current.type == EventType.MouseDown &&
@@ -208,7 +212,8 @@ namespace Dev.Diagnostics
         {
             var offset = position - center;
             var state = _patternIndex >= 0 ? $"checker {_patternSizes[_patternIndex]}" : _player.CurrentState.Name;
-            _lastClick = $"Last click with {state} @{_player.CursorSize}px: offset {offset.x:0}, {offset.y:0} px from the centre.";
+            _lastClick = $"Last click with {state} @{_player.CursorSize}px: " +
+                         $"offset {offset.x:0}, {offset.y:0} px from the centre.";
             Debug.Log($"{LogPrefix}Click: {_lastClick}");
         }
 
@@ -289,7 +294,8 @@ namespace Dev.Diagnostics
             _output.ResetStats();
             player.Warm();
             Line($"Warm {set.name} @{player.CursorSize}px: {firstCount} textures, first use {Ms(firstTotal)} total, " +
-                 $"{Ms(firstAverage)} avg, {Ms(firstMax)} max; again {Ms(_output.AverageMs)} avg, {Ms(_output.MaxMs)} max");
+                 $"{Ms(firstAverage)} avg, {Ms(firstMax)} max; " +
+                 $"again {Ms(_output.AverageMs)} avg, {Ms(_output.MaxMs)} max");
         }
 
         private IEnumerator MeasurePlayback(CursorSet set, int size)
@@ -352,7 +358,7 @@ namespace Dev.Diagnostics
         {
             var probe = WindowsCursorProbe.Capture();
             var mouse = Input.mousePosition;
-            var over = Application.isFocused && mouse.x >= 0f && mouse.y >= 0f && mouse.x < Screen.width &&
+            var over = Application.isFocused && mouse is { x: >= 0f, y: >= 0f } && mouse.x < Screen.width &&
                        mouse.y < Screen.height;
             return $"Screen {Screen.width}x{Screen.height} @{Screen.dpi:0} dpi, window DPI {probe.WindowDpi}, " +
                    $"SM_CXCURSOR {probe.SystemMetricWidth}, for DPI {probe.SystemMetricForDpiWidth}, " +

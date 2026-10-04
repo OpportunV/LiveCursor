@@ -24,8 +24,14 @@ namespace Opportunv.LiveCursor.Tests.Editor
             return this;
         }
 
-        public TestCursorSetBuilder AddTransition(string from, string to, int frames, float frameDuration,
-            bool includesEndpoints = true, bool reversible = true, float reverseFrameDuration = 0f)
+        public TestCursorSetBuilder AddTransition(
+            string from,
+            string to,
+            int frames,
+            float frameDuration,
+            bool includesEndpoints = true,
+            bool reversible = true,
+            float reverseFrameDuration = 0f)
         {
             var clip = CreateClip($"{from}>{to}", frames, frameDuration);
             _transitions.Add(new(from, to, clip, includesEndpoints, reversible, reverseFrameDuration));

@@ -6,6 +6,21 @@ All notable changes to this package are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+- `immediate: true` starts a change on the same frame without skipping a transition that is already playing.
+- Changing the target mid-transition to a third state switches to the set's direct transition from the origin,
+  at the same progress, instead of queueing it after the current one. Without a direct transition the change still
+  plays after the current one.
+- Generated state constants write the `All` list one entry per line.
+
+### Fixed
+- Opening a cursor set by double-click on Unity 6.3 and newer.
+
+### Removed
+- `CursorStateId.Hash`; use `GetHashCode()`.
+
+## [0.1.0] - 2026-10-03
+
 ### Added
 - Cursor set asset with looping states, authored transitions and per-size frames.
 - Cursor player core with reverse playback, mid-transition reversal and queued state changes.

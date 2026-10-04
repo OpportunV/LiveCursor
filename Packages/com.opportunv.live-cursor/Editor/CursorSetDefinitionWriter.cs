@@ -49,7 +49,9 @@ namespace Opportunv.LiveCursor.Editor
                 builder.Append("      \"to\": ").Append(Quote(transition.to)).Append(",\n");
                 builder.Append("      \"frames\": ").Append(Frames(transition.frames)).Append(",\n");
                 builder.Append("      \"frameDurationMs\": ").Append(Number(transition.frameDurationMs)).Append(",\n");
-                builder.Append("      \"includesEndpoints\": ").Append(Bool(transition.includesEndpoints)).Append(",\n");
+                builder.Append("      \"includesEndpoints\": ")
+                    .Append(Bool(transition.includesEndpoints))
+                    .Append(",\n");
                 builder.Append("      \"reversible\": ").Append(Bool(transition.reversible));
                 if (transition.reverseFrameDurationMs > 0f)
                 {
@@ -104,8 +106,8 @@ namespace Opportunv.LiveCursor.Editor
                 return builder.Append("] }").ToString();
             }
 
-            return
-                $"{{ \"sheet\": {Quote(frames.sheet)}, \"columns\": {frames.columns}, \"rows\": {frames.rows}, \"count\": {frames.count} }}";
+            return $"{{ \"sheet\": {Quote(frames.sheet)}, \"columns\": {frames.columns}, " +
+                   $"\"rows\": {frames.rows}, \"count\": {frames.count} }}";
         }
 
         private static string Numbers(int[] values)

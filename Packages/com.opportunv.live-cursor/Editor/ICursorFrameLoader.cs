@@ -5,7 +5,10 @@ namespace Opportunv.LiveCursor.Editor
 {
     internal interface ICursorFrameLoader
     {
-        public bool TryLoad(CursorFramesDefinition frames, string clipLabel, List<Texture2D> output,
+        public void Load(
+            CursorFramesDefinition frames,
+            string clipLabel,
+            List<Texture2D> output,
             CursorImportReport report);
     }
 }

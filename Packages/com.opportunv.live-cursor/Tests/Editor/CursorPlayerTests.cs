@@ -285,8 +285,7 @@ namespace Opportunv.LiveCursor.Tests.Editor
         public void Transition_OppositeDirectionPlaysAuthoredClipBackwards()
         {
             _player.SetSet(CreateStandardSet());
-            _player.SetState(_grab, true);
-            _player.SetState(_grab, true);
+            Enter(_grab);
             Assert.That(_player.CurrentState, Is.EqualTo(_grab));
 
             _player.SetState(_default);
@@ -304,8 +303,8 @@ namespace Opportunv.LiveCursor.Tests.Editor
         public void Transition_ReverseUsesItsOwnFrameDuration()
         {
             _player.SetSet(CreateStandardSet());
-            EnterImmediately(_grab);
-            EnterImmediately(_dragging);
+            Enter(_grab);
+            Enter(_dragging);
 
             _player.SetState(_grab);
             Assert.That(_output.Last, Is.EqualTo(FrameName("Grab>Dragging", 4)));
@@ -326,7 +325,7 @@ namespace Opportunv.LiveCursor.Tests.Editor
                 .AddTransition("Default", "Grab", 6, TransitionFrame, reversible: false)
                 .Build();
             _player.SetSet(set);
-            EnterImmediately(_grab);
+            Enter(_grab);
 
             _player.SetState(_default);
 
@@ -436,7 +435,7 @@ namespace Opportunv.LiveCursor.Tests.Editor
         }
 
         [Test]
-        public void ThirdState_ImmediateSkipsToDestinationAndStartsNextTransition()
+        public void ThirdState_ImmediateDoesNotSkipCurrentTransition()
         {
             _player.SetSet(CreateStandardSet());
             _player.SetState(_grab);
@@ -444,9 +443,71 @@ namespace Opportunv.LiveCursor.Tests.Editor
 
             _player.SetState(_dragging, true);
 
-            Assert.That(_output.Last, Is.EqualTo(FrameName("Grab>Dragging", 1)));
-            Assert.That(_player.CurrentState, Is.EqualTo(_grab));
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Default>Grab", 2)));
+            Assert.That(_player.CurrentState, Is.EqualTo(_default));
             Assert.That(_player.TargetState, Is.EqualTo(_dragging));
+        }
+
+        [Test]
+        public void ThirdState_SwitchesToDirectTransitionAtSameProgress()
+        {
+            _player.SetSet(CreateDirectSet(false));
+            _entered.Clear();
+            _player.SetState(_grab);
+            _player.Tick(TransitionFrame * 2f);
+
+            _player.SetState(_dragging);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Default>Dragging", 3)));
+            Assert.That(_player.CurrentState, Is.EqualTo(_default));
+            Assert.That(_player.TargetState, Is.EqualTo(_dragging));
+
+            _player.Tick(TransitionFrame * 2f);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Dragging", 0)));
+            Assert.That(_entered, Is.EqualTo(new[] { _dragging }));
+        }
+
+        [Test]
+        public void ThirdState_SwitchesToReversibleOppositeTransition()
+        {
+            _player.SetSet(CreateDirectSet(true));
+            _player.SetState(_grab);
+            _player.Tick(TransitionFrame);
+
+            _player.SetState(_dragging);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Dragging>Default", 3)));
+
+            _player.Tick(TransitionFrame);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Dragging>Default", 2)));
+        }
+
+        [Test]
+        public void ThirdState_SwitchAfterReversalStartsFromNewOrigin()
+        {
+            _player.SetSet(CreateDirectSet(false));
+            Enter(_grab);
+            _player.SetState(_default);
+            _player.Tick(TransitionFrame);
+
+            _player.SetState(_dragging);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Grab>Dragging", 2)));
+            Assert.That(_player.CurrentState, Is.EqualTo(_grab));
+        }
+
+        [Test]
+        public void ThirdState_WithoutDirectTransitionStillQueues()
+        {
+            _player.SetSet(CreateStandardSet());
+            _player.SetState(_grab);
+
+            _player.SetState(_busy);
+
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Default>Grab", 1)));
+            Assert.That(_player.TargetState, Is.EqualTo(_busy));
         }
 
         [Test]
@@ -479,15 +540,15 @@ namespace Opportunv.LiveCursor.Tests.Editor
         }
 
         [Test]
-        public void Immediate_ToCurrentDestinationFinishesTransition()
+        public void Immediate_ToCurrentDestinationKeepsPlaying()
         {
             _player.SetSet(CreateStandardSet());
             _player.SetState(_grab);
 
             _player.SetState(_grab, true);
 
-            Assert.That(_output.Last, Is.EqualTo(FrameName("Grab", 0)));
-            Assert.That(_player.IsTransitioning, Is.False);
+            Assert.That(_output.Last, Is.EqualTo(FrameName("Default>Grab", 1)));
+            Assert.That(_player.IsTransitioning, Is.True);
         }
 
         [Test]
@@ -582,18 +643,20 @@ namespace Opportunv.LiveCursor.Tests.Editor
             _player.SetState(_default);
             _player.Tick(1f);
 
-            Assert.That(() =>
-            {
-                _player.Tick(LoopFrame);
-                _player.SetState(_grab);
-                _player.Tick(TransitionFrame);
-                _player.SetState(_default);
-                _player.Tick(TransitionFrame);
-                _player.SetState(_grab, true);
-                _player.Tick(1f);
-                _player.SetState(_default);
-                _player.Tick(1f);
-            }, Is.Not.AllocatingGCMemory());
+            Assert.That(
+                () =>
+                {
+                    _player.Tick(LoopFrame);
+                    _player.SetState(_grab);
+                    _player.Tick(TransitionFrame);
+                    _player.SetState(_default);
+                    _player.Tick(TransitionFrame);
+                    _player.SetState(_grab, true);
+                    _player.Tick(1f);
+                    _player.SetState(_default);
+                    _player.Tick(1f);
+                },
+                Is.Not.AllocatingGCMemory());
         }
 
         private CursorSet CreateStandardSet(string name = "TestSet")
@@ -608,10 +671,30 @@ namespace Opportunv.LiveCursor.Tests.Editor
                 .Build(name);
         }
 
-        private void EnterImmediately(CursorStateId state)
+        private CursorSet CreateDirectSet(bool oppositeDirection)
         {
-            _player.SetState(state, true);
-            _player.SetState(state, true);
+            _builder
+                .AddState("Default", 4, LoopFrame)
+                .AddState("Grab", 4, LoopFrame)
+                .AddState("Dragging", 4, LoopFrame)
+                .AddTransition("Default", "Grab", 6, TransitionFrame)
+                .AddTransition("Grab", "Dragging", 6, TransitionFrame);
+            if (oppositeDirection)
+            {
+                _builder.AddTransition("Dragging", "Default", 6, TransitionFrame);
+            }
+            else
+            {
+                _builder.AddTransition("Default", "Dragging", 6, TransitionFrame);
+            }
+
+            return _builder.Build();
+        }
+
+        private void Enter(CursorStateId state)
+        {
+            _player.SetState(state);
+            _player.Tick(10f);
         }
     }
 }

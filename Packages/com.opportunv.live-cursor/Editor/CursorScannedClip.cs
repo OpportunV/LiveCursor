@@ -32,8 +32,14 @@ namespace Opportunv.LiveCursor.Editor
 
         public string Key => Folder ?? (FramePaths.Count > 0 ? FramePaths[0] : Name);
 
-        public CursorScannedClip(string name, string folder, IReadOnlyList<string> framePaths, int width, int height,
-            string problem, CursorSheetLayout sheet = default)
+        public CursorScannedClip(
+            string name,
+            string folder,
+            IReadOnlyList<string> framePaths,
+            int width,
+            int height,
+            string problem,
+            CursorSheetLayout sheet = default)
         {
             Name = name;
             Folder = folder;
@@ -56,7 +62,8 @@ namespace Opportunv.LiveCursor.Editor
                 return null;
             }
 
-            return $"{Width}x{Height} does not split into {Sheet.Columns}x{Sheet.Rows} cells of at least {CursorSheetLayout.MinCellSize} px.";
+            return $"{Width}x{Height} does not split into {Sheet.Columns}x{Sheet.Rows} cells of at least " +
+                   $"{CursorSheetLayout.MinCellSize} px.";
         }
     }
 }

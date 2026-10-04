@@ -4,7 +4,7 @@ Animated hardware (OS) cursors for Unity with zero added input lag.
 
 - Looping cursor states you name yourself: Default, Pointer, Grab, Busy, and so on.
 - Authored transitions between states that can play in reverse at their own speed.
-- Changing state mid-transition turns playback around from the current frame.
+- Changing state mid-transition turns playback around from the current frame, or switches to a direct transition.
 - Click-driven changes show their first frame on the same frame as the input.
 - Per-state click points, moved smoothly during transitions.
 - Frames pre-scaled with a high-quality filter to the system cursor size, so Unity never resamples them.
@@ -83,6 +83,11 @@ Everything goes through a **Cursor Animator**, or the `CursorPlayer` it exposes 
 _cursor.SetState(CursorStates.Busy);
 _cursor.SetState(CursorStates.Grab, immediate: true); // click-driven: the first frame shows this frame
 ```
+
+**Changing state mid-transition**: going back to the state a transition came from plays it backwards from the
+current frame. Going to a third state switches to the set's direct transition from the origin at the same
+progress, when the set has one, and otherwise plays after the current transition. `immediate: true` never skips
+frames; it only makes the change start on this frame.
 
 **Requests** sit on top of the base state, so hover effects, drags and game code never fight. The highest
 priority wins, ties go to the newest request, and releasing a request falls back to the next one or to the base

@@ -16,14 +16,16 @@ namespace Opportunv.LiveCursor.Editor
 
         public bool IsSheet => Columns > 0 && Rows > 0;
 
-        public int CellCount => Columns * Rows;
-
         public int FrameCount => Count > 0 ? Mathf.Min(Count, CellCount) : CellCount;
 
-        private static readonly Regex _suffix = new(@"^(?<name>.*?)[ _\-.]?(?<columns>\d+)[xX](?<rows>\d+)(?:[ _\-.](?<count>\d+))?$",
+        private int CellCount => Columns * Rows;
+
+        private static readonly Regex _suffix = new(
+            @"^(?<name>.*?)[ _\-.]?(?<columns>\d+)[xX](?<rows>\d+)(?:[ _\-.](?<count>\d+))?$",
             RegexOptions.CultureInvariant);
 
-        private static readonly Regex _text = new(@"^\s*(?<columns>\d+)\s*[xX]\s*(?<rows>\d+)\s*(?:[:/ _\-]\s*(?<count>\d+))?\s*$",
+        private static readonly Regex _text = new(
+            @"^\s*(?<columns>\d+)\s*[xX]\s*(?<rows>\d+)\s*(?:[:/ _\-]\s*(?<count>\d+))?\s*$",
             RegexOptions.CultureInvariant);
 
         public CursorSheetLayout(int columns, int rows, int count)
@@ -36,7 +38,7 @@ namespace Opportunv.LiveCursor.Editor
         public static bool TryParseFileName(string fileName, out string name, out CursorSheetLayout layout)
         {
             var match = _suffix.Match(fileName ?? string.Empty);
-            name = match.Success ? match.Groups["name"].Value.TrimEnd(' ', '_', '-', '.') : fileName;
+            name = match.Success ? match.Groups["name"].Value.TrimEnd(' ', '_', '-', '.') : fileName ?? string.Empty;
             layout = match.Success ? FromMatch(match) : default;
             return match.Success && name.Length > 0 && layout.CellCount > 1;
         }

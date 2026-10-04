@@ -25,10 +25,5 @@ namespace Opportunv.LiveCursor.Tests.Editor
         {
             ClearCount++;
         }
-
-        public string NameAt(int index)
-        {
-            return _applied[index].name;
-        }
     }
 }

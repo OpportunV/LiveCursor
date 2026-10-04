@@ -19,7 +19,10 @@ namespace Opportunv.LiveCursor.Editor
             "while"
         };
 
-        public static string Generate(string className, string @namespace, IReadOnlyList<string> stateNames,
+        public static string Generate(
+            string className,
+            string @namespace,
+            IReadOnlyList<string> stateNames,
             IReadOnlyList<string> sources)
         {
             StringBuilder builder = new();
@@ -64,7 +67,15 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             builder.Append(indent).Append("    public static readonly IReadOnlyList<CursorStateId> ").Append(allName)
-                .Append(" = new[] { ").Append(string.Join(", ", identifiers)).Append(" };\n");
+                .Append(" = new[]\n");
+            builder.Append(indent).Append("    {\n");
+            for (var i = 0; i < identifiers.Count; i++)
+            {
+                builder.Append(indent).Append("        ").Append(identifiers[i])
+                    .Append(i < identifiers.Count - 1 ? ",\n" : "\n");
+            }
+
+            builder.Append(indent).Append("    };\n");
 
             builder.Append(indent).Append("}\n");
             if (indent.Length > 0)

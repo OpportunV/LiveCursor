@@ -112,18 +112,25 @@ namespace Opportunv.LiveCursor.Editor
         private void Rebuild()
         {
             rootVisualElement.Clear();
-            _content = new();
-            _content.style.paddingLeft = 8f;
-            _content.style.paddingRight = 8f;
-            _content.style.paddingTop = 6f;
-            _content.style.paddingBottom = 8f;
+            _content = new()
+            {
+                style =
+                {
+                    paddingLeft = 8f,
+                    paddingRight = 8f,
+                    paddingTop = 6f,
+                    paddingBottom = 8f
+                }
+            };
             rootVisualElement.Add(_content);
 
             BuildSource();
             if (_model == null)
             {
                 _content.Add(new HelpBox(
-                    "Choose a folder that contains the cursor frames. Every subfolder of numbered PNGs and every sprite sheet named like 'Grab_4x2.png' becomes a state or, when it is named like 'DefaultToGrab', a transition.",
+                    "Choose a folder that contains the cursor frames. Every subfolder of numbered PNGs and every " +
+                    "sprite sheet named like 'Grab_4x2.png' becomes a state or, when it is named like " +
+                    "'DefaultToGrab', a transition.",
                     HelpBoxMessageType.Info));
                 return;
             }
@@ -136,13 +143,20 @@ namespace Opportunv.LiveCursor.Editor
             BuildTransitions();
             BuildCode();
 
-            _messages = new();
-            _messages.style.marginTop = 8f;
+            _messages = new()
+            {
+                style = { marginTop = 8f }
+            };
             _content.Add(_messages);
 
-            _createButton = new(Create);
-            _createButton.style.height = 28f;
-            _createButton.style.marginTop = 6f;
+            _createButton = new(Create)
+            {
+                style =
+                {
+                    height = 28f,
+                    marginTop = 6f
+                }
+            };
             _content.Add(_createButton);
 
             RefreshPreview();
@@ -152,12 +166,18 @@ namespace Opportunv.LiveCursor.Editor
         private void BuildSource()
         {
             var row = Row();
-            var label = new Label("Source folder");
-            label.style.width = 110f;
+            var label = new Label("Source folder")
+            {
+                style = { width = 110f }
+            };
             row.Add(label);
 
-            TextField field = new() { value = _sourceFolder ?? string.Empty, isReadOnly = true };
-            field.style.flexGrow = 1f;
+            TextField field = new()
+            {
+                value = _sourceFolder ?? string.Empty,
+                isReadOnly = true,
+                style = { flexGrow = 1f }
+            };
             row.Add(field);
 
             row.Add(new Button(BrowseFolder) { text = "Browse…" });
@@ -179,8 +199,11 @@ namespace Opportunv.LiveCursor.Editor
             });
             section.Add(output);
 
-            TextField sizes = new("Sizes (px)") { value = string.Join(", ", _model.Sizes) };
-            sizes.tooltip = "Square sizes to bake. At runtime the smallest size covering the system cursor is used.";
+            TextField sizes = new("Sizes (px)")
+            {
+                value = string.Join(", ", _model.Sizes),
+                tooltip = "Square sizes to bake. At runtime the smallest size covering the system cursor is used."
+            };
             sizes.RegisterValueChangedCallback(evt =>
             {
                 ParseSizes(evt.newValue);
@@ -195,9 +218,14 @@ namespace Opportunv.LiveCursor.Editor
             var row = Row();
             row.style.alignItems = Align.FlexStart;
 
-            _previewFrame = new();
-            _previewFrame.style.backgroundColor = _previewBackground;
-            _previewFrame.style.marginRight = 10f;
+            _previewFrame = new()
+            {
+                style =
+                {
+                    backgroundColor = _previewBackground,
+                    marginRight = 10f
+                }
+            };
             _previewImage = new() { scaleMode = ScaleMode.StretchToFill };
             _previewImage.RegisterCallback<PointerDownEvent>(evt => SetHotspotFromPointer(evt.localPosition));
             _previewImage.RegisterCallback<PointerMoveEvent>(evt =>
@@ -209,14 +237,19 @@ namespace Opportunv.LiveCursor.Editor
             });
             _previewFrame.Add(_previewImage);
 
-            _hotspotMarker = new() { pickingMode = PickingMode.Ignore };
-            _hotspotMarker.style.position = Position.Absolute;
+            _hotspotMarker = new()
+            {
+                pickingMode = PickingMode.Ignore,
+                style = { position = Position.Absolute }
+            };
             SetBorder(_hotspotMarker, Color.red, 1f);
             _previewFrame.Add(_hotspotMarker);
             row.Add(_previewFrame);
 
-            VisualElement fields = new();
-            fields.style.flexGrow = 1f;
+            VisualElement fields = new()
+            {
+                style = { flexGrow = 1f }
+            };
             _hotspotTarget = new("Hotspot for", new List<string>(), 0);
             _hotspotTarget.RegisterValueChangedCallback(evt =>
                 SelectHotspotTarget(_model.States.Find(state => state.Include && state.Name == evt.newValue)));
@@ -245,7 +278,9 @@ namespace Opportunv.LiveCursor.Editor
             fields.Add(_hotspotX);
             fields.Add(_hotspotY);
             fields.Add(Muted(
-                "Click or drag on the frame to set the click point. Pick a state to give it its own, for example the centre of a text beam or crosshair.\nCoordinates are source pixels from the top-left corner and are scaled for every size."));
+                "Click or drag on the frame to set the click point. Pick a state to give it its own, for example the " +
+                "centre of a text beam or crosshair.\nCoordinates are source pixels from the top-left corner and are " +
+                "scaled for every size."));
             row.Add(fields);
             section.Add(row);
             RefreshHotspotChoices();
@@ -414,21 +449,27 @@ namespace Opportunv.LiveCursor.Editor
             });
             row.Add(Fixed(include, 22f));
 
-            row.Add(Fixed(StateDropdown(transition.From, stateNames, value =>
-            {
-                transition.From = value;
-                RefreshMessages();
-            }), StateDropdownWidth));
-            row.Add(Fixed(StateDropdown(transition.To, stateNames, value =>
-            {
-                transition.To = value;
-                RefreshMessages();
-            }), StateDropdownWidth));
+            row.Add(Fixed(
+                StateDropdown(transition.From, stateNames, value =>
+                {
+                    transition.From = value;
+                    RefreshMessages();
+                }),
+                StateDropdownWidth));
+            row.Add(Fixed(
+                StateDropdown(transition.To, stateNames, value =>
+                {
+                    transition.To = value;
+                    RefreshMessages();
+                }),
+                StateDropdownWidth));
 
             row.Add(Fixed(FramesField(transition.Clip, transition.IsMissing), NumberWidth));
 
-            var total = new Label(TotalLabel(transition));
-            total.tooltip = "Time from the request until the destination state shows.";
+            var total = new Label(TotalLabel(transition))
+            {
+                tooltip = "Time from the request until the destination state shows."
+            };
 
             FloatField duration = new() { value = transition.FrameDurationMs };
             duration.RegisterValueChangedCallback(evt =>
@@ -443,7 +484,8 @@ namespace Opportunv.LiveCursor.Editor
             Toggle endpoints = new()
             {
                 value = transition.IncludesEndpoints,
-                tooltip = "The first and last frames repeat the two states' first frames and are skipped during playback."
+                tooltip = "The first and last frames repeat the two states' first frames and are skipped during " +
+                          "playback."
             };
             endpoints.RegisterValueChangedCallback(evt =>
             {
@@ -487,7 +529,8 @@ namespace Opportunv.LiveCursor.Editor
         {
             var section = Section("State constants");
             section.Add(Muted(
-                "Generates a static class with a CursorStateId field per state, regenerated on every import. Interchangeable sets, such as skins picked in settings, should share one class."));
+                "Generates a static class with a CursorStateId field per state, regenerated on every import. " +
+                "Interchangeable sets, such as skins picked in settings, should share one class."));
 
             List<CursorStateCodeTarget> targets = new();
             List<string> shareChoices = new() { OwnClassChoice };
@@ -499,7 +542,8 @@ namespace Opportunv.LiveCursor.Editor
                 }
 
                 targets.Add(target);
-                shareChoices.Add($"{target.FullName}  ({string.Join(", ", target.SetPaths.ConvertAll(Path.GetFileName))})");
+                shareChoices.Add($"{target.FullName}  " +
+                                 $"({string.Join(", ", target.SetPaths.ConvertAll(Path.GetFileName))})");
             }
 
             DropdownField share = new("Share with", shareChoices, SharedChoice(targets, shareChoices));
@@ -577,8 +621,12 @@ namespace Opportunv.LiveCursor.Editor
                 return new Label(missing ? "missing" : clip.FrameCount.ToString());
             }
 
-            TextField field = new() { value = clip.Sheet.ToString(), isDelayed = true };
-            field.tooltip = SheetTooltip(clip);
+            TextField field = new()
+            {
+                value = clip.Sheet.ToString(),
+                isDelayed = true,
+                tooltip = SheetTooltip(clip)
+            };
             field.RegisterValueChangedCallback(evt =>
             {
                 var text = evt.newValue.Trim();
@@ -671,8 +719,8 @@ namespace Opportunv.LiveCursor.Editor
 
             _previewTexture.filterMode = FilterMode.Point;
             _previewTexture.hideFlags = HideFlags.HideAndDontSave;
-            _previewZoom = Mathf.Max(1, Mathf.FloorToInt(PreviewSize / Mathf.Max(_previewTexture.width,
-                _previewTexture.height)));
+            var largest = Mathf.Max(_previewTexture.width, _previewTexture.height);
+            _previewZoom = Mathf.Max(1, Mathf.FloorToInt(PreviewSize / largest));
 
             var width = _previewTexture.width * _previewZoom;
             var height = _previewTexture.height * _previewZoom;
@@ -746,8 +794,7 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             var path = _model.OutputPath;
-            if (File.Exists(path) && path != _definitionPath && !EditorUtility.DisplayDialog("Overwrite cursor set?",
-                    $"'{path}' already exists. Replace it with the set from this window?", "Replace", "Cancel"))
+            if (File.Exists(path) && path != _definitionPath && !ConfirmOverwrite(path))
             {
                 return;
             }
@@ -779,8 +826,10 @@ namespace Opportunv.LiveCursor.Editor
             var projectPath = ToProjectPath(selected);
             if (projectPath == null)
             {
-                EditorUtility.DisplayDialog("Folder outside the project",
-                    "Choose a folder inside this project's Assets folder.", "OK");
+                EditorUtility.DisplayDialog(
+                    "Folder outside the project",
+                    "Choose a folder inside this project's Assets folder.",
+                    "OK");
                 return;
             }
 
@@ -807,6 +856,15 @@ namespace Opportunv.LiveCursor.Editor
 
             DestroyImmediate(_previewTexture);
             _previewTexture = null;
+        }
+
+        private static bool ConfirmOverwrite(string path)
+        {
+            return EditorUtility.DisplayDialog(
+                "Overwrite cursor set?",
+                $"'{path}' already exists. Replace it with the set from this window?",
+                "Replace",
+                "Cancel");
         }
 
         private static string ToProjectPath(string absolutePath)
@@ -838,8 +896,12 @@ namespace Opportunv.LiveCursor.Editor
 
         private VisualElement Section(string text, VisualElement parent = null)
         {
-            Foldout foldout = new() { text = text, value = true };
-            foldout.style.marginTop = 8f;
+            Foldout foldout = new()
+            {
+                text = text,
+                value = true,
+                style = { marginTop = 8f }
+            };
             (parent ?? _content).Add(foldout);
             return foldout;
         }
@@ -859,14 +921,20 @@ namespace Opportunv.LiveCursor.Editor
 
         private static VisualElement Row()
         {
-            VisualElement row = new();
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.alignItems = Align.Center;
-            row.style.marginBottom = 2f;
+            VisualElement row = new()
+            {
+                style =
+                {
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center,
+                    marginBottom = 2f
+                }
+            };
             return row;
         }
 
-        private static T Fixed<T>(T element, float width) where T : VisualElement
+        private static T Fixed<T>(T element, float width)
+            where T : VisualElement
         {
             element.style.width = width;
             element.style.flexShrink = 0f;
@@ -877,9 +945,14 @@ namespace Opportunv.LiveCursor.Editor
 
         private static Label Muted(string text)
         {
-            Label label = new(text);
-            label.style.color = _mutedText;
-            label.style.whiteSpace = WhiteSpace.Normal;
+            Label label = new(text)
+            {
+                style =
+                {
+                    color = _mutedText,
+                    whiteSpace = WhiteSpace.Normal
+                }
+            };
             return label;
         }
 

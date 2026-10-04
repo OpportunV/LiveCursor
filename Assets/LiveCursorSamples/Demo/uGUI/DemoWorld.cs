@@ -19,10 +19,14 @@ namespace Opportunv.LiveCursor.Samples
 
             for (var i = 0; i < 3; i++)
             {
-                var crate = Spawn(PrimitiveType.Cube, $"Crate {i + 1}", new(-3f + i * 2.2f, 0.5f, -0.5f + i * 0.6f),
-                    Vector3.one, _crate);
+                var crate = Spawn(
+                    PrimitiveType.Cube,
+                    $"Crate {i + 1}",
+                    new(-3f + i * 2.2f, 0.5f, -0.5f + i * 0.6f),
+                    Vector3.one,
+                    _crate);
                 crate.AddComponent<CursorHover>().Configure(_cursor, DemoCursorStates.Grab, DemoCursorStates.Grabbing);
-                crate.AddComponent<DemoDraggable>().Cursor = _cursor;
+                crate.AddComponent<DemoDraggable>().Configure(_cursor);
             }
 
             var target = Spawn(PrimitiveType.Sphere, "Target", new(-1.5f, 1f, 3f), Vector3.one * 1.4f, _target);

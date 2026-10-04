@@ -111,9 +111,9 @@ namespace Dev.Editor
                 demo.ToggleIdle);
             for (var i = 0; i < skins.Length; i++)
             {
-                UnityEventTools.AddIntPersistentListener(
-                    AddHoverButton(panel, $"Skin: {skins[i].name}", cursor, DemoCursorStates.Pointer, default).onClick,
-                    demo.SetSkin, i);
+                var label = $"Skin: {skins[i].name}";
+                var skinButton = AddHoverButton(panel, label, cursor, DemoCursorStates.Pointer, default);
+                UnityEventTools.AddIntPersistentListener(skinButton.onClick, demo.SetSkin, i);
             }
 
             var status = CreateStatus(canvas.transform);
@@ -211,7 +211,11 @@ namespace Dev.Editor
             component.raycastTarget = false;
         }
 
-        private static Button AddHoverButton(Transform parent, string text, CursorAnimator cursor, CursorStateId state,
+        private static Button AddHoverButton(
+            Transform parent,
+            string text,
+            CursorAnimator cursor,
+            CursorStateId state,
             CursorStateId pressedState)
         {
             var buttonObject = DefaultControls.CreateButton(UiResources());

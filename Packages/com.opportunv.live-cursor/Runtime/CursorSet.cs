@@ -11,13 +11,13 @@ namespace Opportunv.LiveCursor
         [SerializeField] private CursorState[] _states = Array.Empty<CursorState>();
         [SerializeField] private CursorTransition[] _transitions = Array.Empty<CursorTransition>();
 
-        /// <summary>The number of baked sizes.</summary>
+        /// <summary>Gets the number of baked sizes.</summary>
         public int SizeCount => _sizes.Length;
 
-        /// <summary>The number of states.</summary>
+        /// <summary>Gets the number of states.</summary>
         public int StateCount => _states.Length;
 
-        /// <summary>The number of transitions.</summary>
+        /// <summary>Gets the number of transitions.</summary>
         public int TransitionCount => _transitions.Length;
 
         private CursorStateId[] _stateIds;

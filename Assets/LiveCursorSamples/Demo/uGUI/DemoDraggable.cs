@@ -8,15 +8,14 @@ namespace Opportunv.LiveCursor.Samples
         [SerializeField] private CursorAnimator _cursor;
         [SerializeField] private int _priority = 100;
 
-        public CursorAnimator Cursor
-        {
-            get => _cursor;
-            set => _cursor = value;
-        }
-
         private CursorRequest _drag;
         private Plane _plane;
         private Vector3 _offset;
+
+        public void Configure(CursorAnimator cursor)
+        {
+            _cursor = cursor;
+        }
 
         public void OnBeginDrag(PointerEventData eventData)
         {

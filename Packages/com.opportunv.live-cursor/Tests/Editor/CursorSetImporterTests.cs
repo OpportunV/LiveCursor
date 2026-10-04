@@ -16,10 +16,20 @@ namespace Opportunv.LiveCursor.Tests.Editor
   ""hotspot"": [2, 2],
   ""states"": [
     { ""name"": ""Default"", ""frames"": { ""folder"": ""Default"" }, ""frameDurationMs"": 100 },
-    { ""name"": ""Busy"", ""frames"": { ""sheet"": ""Busy.png"", ""columns"": 2, ""rows"": 1 }, ""frameDurationMs"": 80 }
+    {
+      ""name"": ""Busy"",
+      ""frames"": { ""sheet"": ""Busy.png"", ""columns"": 2, ""rows"": 1 },
+      ""frameDurationMs"": 80
+    }
   ],
   ""transitions"": [
-    { ""from"": ""Default"", ""to"": ""Busy"", ""frames"": { ""files"": [""Default/Frame_0.png"", ""Busy/Mid.png""] }, ""frameDurationMs"": 20, ""includesEndpoints"": false }
+    {
+      ""from"": ""Default"",
+      ""to"": ""Busy"",
+      ""frames"": { ""files"": [""Default/Frame_0.png"", ""Busy/Mid.png""] },
+      ""frameDurationMs"": 20,
+      ""includesEndpoints"": false
+    }
   ]
 }";
 

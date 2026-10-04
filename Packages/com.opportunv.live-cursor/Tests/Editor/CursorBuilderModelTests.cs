@@ -174,7 +174,8 @@ namespace Opportunv.LiveCursor.Tests.Editor
         public void DefinitionFile_IgnoredWhenNothingMatches()
         {
             var path = $"{Folder}/Set.cursorset";
-            File.WriteAllText(path,
+            File.WriteAllText(
+                path,
                 "{ \"states\": [ { \"name\": \"Default\", \"frames\": { \"folder\": \"Nowhere\" } } ] }");
 
             var model = CursorBuilderModel.FromDefinitionFile(path);
@@ -250,7 +251,9 @@ namespace Opportunv.LiveCursor.Tests.Editor
             Assert.That(parsed.sizes, Is.EqualTo(definition.sizes));
             Assert.That(parsed.states.Length, Is.EqualTo(definition.states.Length));
             Assert.That(parsed.states[0].frames.folder, Is.EqualTo(definition.states[0].frames.folder));
-            Assert.That(parsed.transitions[0].includesEndpoints, Is.EqualTo(definition.transitions[0].includesEndpoints));
+            Assert.That(
+                parsed.transitions[0].includesEndpoints,
+                Is.EqualTo(definition.transitions[0].includesEndpoints));
             Assert.That(parsed.transitions[0].frameDurationMs, Is.EqualTo(definition.transitions[0].frameDurationMs));
         }
 

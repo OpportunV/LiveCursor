@@ -18,6 +18,16 @@ namespace Opportunv.LiveCursor.Samples
         public static readonly CursorStateId Grabbing = new("Grabbing");
         public static readonly CursorStateId Crosshair = new("Crosshair");
 
-        public static readonly IReadOnlyList<CursorStateId> All = new[] { Default, Pointer, Text, Busy, Blocked, Grab, Grabbing, Crosshair };
+        public static readonly IReadOnlyList<CursorStateId> All = new[]
+        {
+            Default,
+            Pointer,
+            Text,
+            Busy,
+            Blocked,
+            Grab,
+            Grabbing,
+            Crosshair
+        };
     }
 }

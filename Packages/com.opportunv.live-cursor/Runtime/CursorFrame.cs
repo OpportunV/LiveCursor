@@ -11,7 +11,7 @@ namespace Opportunv.LiveCursor
         [SerializeField] private Texture2D[] _textures;
         [SerializeField] private Vector2[] _hotspots;
 
-        /// <summary>The number of baked sizes.</summary>
+        /// <summary>Gets the number of baked sizes.</summary>
         public int SizeCount => _textures?.Length ?? 0;
 
         internal CursorFrame(Texture2D[] textures, Vector2[] hotspots)

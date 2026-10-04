@@ -19,32 +19,37 @@ namespace Opportunv.LiveCursor.Editor
             _baseDirectory = baseDirectory.Replace('\\', '/');
         }
 
-        public bool TryLoad(CursorFramesDefinition frames, string clipLabel, List<Texture2D> output,
+        public void Load(
+            CursorFramesDefinition frames,
+            string clipLabel,
+            List<Texture2D> output,
             CursorImportReport report)
         {
             if (frames == null)
             {
                 report.Error($"{clipLabel}: no frames defined.");
-                return false;
+                return;
             }
 
             if (!string.IsNullOrEmpty(frames.sheet))
             {
-                return TryLoadSheet(frames, clipLabel, output, report);
+                LoadSheet(frames, clipLabel, output, report);
+                return;
             }
 
             if (frames.files is { Length: > 0 })
             {
-                return TryLoadFiles(frames.files, clipLabel, output, report);
+                LoadFiles(frames.files, clipLabel, output, report);
+                return;
             }
 
             if (!string.IsNullOrEmpty(frames.folder))
             {
-                return TryLoadFolder(frames.folder, clipLabel, output, report);
+                LoadFolder(frames.folder, clipLabel, output, report);
+                return;
             }
 
             report.Error($"{clipLabel}: frames need a 'folder', 'files' or 'sheet'.");
-            return false;
         }
 
         public void Dispose()
@@ -57,20 +62,20 @@ namespace Opportunv.LiveCursor.Editor
             _created.Clear();
         }
 
-        private bool TryLoadFolder(string folder, string clipLabel, List<Texture2D> output, CursorImportReport report)
+        private void LoadFolder(string folder, string clipLabel, List<Texture2D> output, CursorImportReport report)
         {
             var path = Resolve(folder);
             if (!Directory.Exists(path))
             {
                 report.Error($"{clipLabel}: folder '{path}' does not exist.");
-                return false;
+                return;
             }
 
             var files = Directory.GetFiles(path, "*.png", SearchOption.TopDirectoryOnly);
             if (files.Length == 0)
             {
                 report.Error($"{clipLabel}: folder '{path}' has no PNG files.");
-                return false;
+                return;
             }
 
             Array.Sort(files, NaturalStringComparer.Instance);
@@ -78,49 +83,49 @@ namespace Opportunv.LiveCursor.Editor
             {
                 if (!TryLoadImage(file.Replace('\\', '/'), clipLabel, report, out var texture))
                 {
-                    return false;
+                    return;
                 }
 
                 output.Add(texture);
             }
-
-            return true;
         }
 
-        private bool TryLoadFiles(string[] files, string clipLabel, List<Texture2D> output, CursorImportReport report)
+        private void LoadFiles(string[] files, string clipLabel, List<Texture2D> output, CursorImportReport report)
         {
             foreach (var file in files)
             {
                 if (!TryLoadImage(Resolve(file), clipLabel, report, out var texture))
                 {
-                    return false;
+                    return;
                 }
 
                 output.Add(texture);
             }
-
-            return true;
         }
 
-        private bool TryLoadSheet(CursorFramesDefinition frames, string clipLabel, List<Texture2D> output,
+        private void LoadSheet(
+            CursorFramesDefinition frames,
+            string clipLabel,
+            List<Texture2D> output,
             CursorImportReport report)
         {
             if (frames.columns <= 0 || frames.rows <= 0)
             {
                 report.Error($"{clipLabel}: a sheet needs positive 'columns' and 'rows'.");
-                return false;
+                return;
             }
 
             if (!TryLoadImage(Resolve(frames.sheet), clipLabel, report, out var sheet))
             {
-                return false;
+                return;
             }
 
             if (sheet.width % frames.columns != 0 || sheet.height % frames.rows != 0)
             {
                 report.Error(
-                    $"{clipLabel}: sheet {sheet.width}x{sheet.height} does not divide into {frames.columns}x{frames.rows} cells.");
-                return false;
+                    $"{clipLabel}: sheet {sheet.width}x{sheet.height} does not divide into " +
+                    $"{frames.columns}x{frames.rows} cells.");
+                return;
             }
 
             CursorSheetLayout layout = new(frames.columns, frames.rows, frames.count);
@@ -131,8 +136,6 @@ namespace Opportunv.LiveCursor.Editor
                 _created.Add(cell);
                 output.Add(cell);
             }
-
-            return true;
         }
 
         private bool TryLoadImage(string path, string clipLabel, CursorImportReport report, out Texture2D texture)

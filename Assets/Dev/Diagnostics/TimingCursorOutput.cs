@@ -8,14 +8,13 @@ namespace Dev.Diagnostics
     {
         public int Count { get; private set; }
 
-        public double TotalMs { get; private set; }
-
         public double MaxMs { get; private set; }
 
-        public double AverageMs => Count > 0 ? TotalMs / Count : 0d;
+        public double AverageMs => Count > 0 ? _totalMs / Count : 0d;
 
         private readonly HardwareCursorOutput _hardware = new();
         private readonly Stopwatch _stopwatch = new();
+        private double _totalMs;
 
         public void Apply(Texture2D texture, Vector2 hotspot)
         {
@@ -24,7 +23,7 @@ namespace Dev.Diagnostics
             _stopwatch.Stop();
             var elapsed = _stopwatch.Elapsed.TotalMilliseconds;
             Count++;
-            TotalMs += elapsed;
+            _totalMs += elapsed;
             if (elapsed > MaxMs)
             {
                 MaxMs = elapsed;
@@ -39,7 +38,7 @@ namespace Dev.Diagnostics
         public void ResetStats()
         {
             Count = 0;
-            TotalMs = 0d;
+            _totalMs = 0d;
             MaxMs = 0d;
         }
     }

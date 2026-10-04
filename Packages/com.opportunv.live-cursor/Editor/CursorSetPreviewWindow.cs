@@ -109,8 +109,10 @@ namespace Opportunv.LiveCursor.Editor
             root.Add(_setField);
 
             var settings = Row();
-            _sizeField = new("Size", new List<string>(), 0);
-            _sizeField.style.width = 180f;
+            _sizeField = new("Size", new List<string>(), 0)
+            {
+                style = { width = 180f }
+            };
             _sizeField.labelElement.style.minWidth = 40f;
             _sizeField.RegisterValueChangedCallback(evt =>
             {
@@ -120,34 +122,50 @@ namespace Opportunv.LiveCursor.Editor
             });
             settings.Add(_sizeField);
 
-            Slider speed = new("Speed", 0.1f, 2f) { value = _speed, showInputField = true };
-            speed.style.flexGrow = 1f;
+            Slider speed = new("Speed", 0.1f, 2f)
+            {
+                value = _speed,
+                showInputField = true,
+                style = { flexGrow = 1f }
+            };
             speed.labelElement.style.minWidth = 50f;
             speed.RegisterValueChangedCallback(evt => _speed = evt.newValue);
             settings.Add(speed);
             root.Add(settings);
 
             var playback = Row();
-            _playButton = new(TogglePause);
-            _playButton.style.width = 70f;
+            _playButton = new(TogglePause)
+            {
+                style = { width = 70f }
+            };
             playback.Add(_playButton);
             playback.Add(ToggleField("Idle", !_idleDisabled, "Play each state's loop.", value =>
             {
                 _idleDisabled = !value;
                 _player.IdleEnabled = value;
             }));
-            playback.Add(ToggleField("Immediate", _immediate,
-                "Request states with immediate: true, as for click-driven changes.", value => _immediate = value));
+            playback.Add(ToggleField(
+                "Immediate",
+                _immediate,
+                "Request states with immediate: true, as for click-driven changes.",
+                value => _immediate = value));
             playback.Add(ToggleField("Auto-cycle", _autoCycle, "Step through the states on a timer.", value =>
             {
                 _autoCycle = value;
                 _cycleElapsed = 0f;
             }));
-            FloatField interval = new() { value = _cycleInterval, tooltip = "Seconds between auto-cycle steps." };
-            interval.style.width = 44f;
+            FloatField interval = new()
+            {
+                value = _cycleInterval,
+                tooltip = "Seconds between auto-cycle steps.",
+                style = { width = 44f }
+            };
             interval.RegisterValueChangedCallback(evt => _cycleInterval = Mathf.Max(0.1f, evt.newValue));
             playback.Add(interval);
-            playback.Add(ToggleField("Light background", _lightBackground, "Check the cursor against a light backdrop.",
+            playback.Add(ToggleField(
+                "Light background",
+                _lightBackground,
+                "Check the cursor against a light backdrop.",
                 value =>
                 {
                     _lightBackground = value;
@@ -164,16 +182,28 @@ namespace Opportunv.LiveCursor.Editor
             stages.style.alignItems = Align.FlexStart;
             stages.style.marginTop = 6f;
 
-            _stage = new();
-            _stage.style.width = StageSize;
-            _stage.style.height = StageSize;
-            _stage.style.marginRight = 10f;
-            _stage.style.overflow = Overflow.Hidden;
-            _image = new() { scaleMode = ScaleMode.StretchToFill, pickingMode = PickingMode.Ignore };
-            _image.style.position = Position.Absolute;
+            _stage = new()
+            {
+                style =
+                {
+                    width = StageSize,
+                    height = StageSize,
+                    marginRight = 10f,
+                    overflow = Overflow.Hidden
+                }
+            };
+            _image = new()
+            {
+                scaleMode = ScaleMode.StretchToFill,
+                pickingMode = PickingMode.Ignore,
+                style = { position = Position.Absolute }
+            };
             _stage.Add(_image);
-            _hotspotMarker = new() { pickingMode = PickingMode.Ignore };
-            _hotspotMarker.style.position = Position.Absolute;
+            _hotspotMarker = new()
+            {
+                pickingMode = PickingMode.Ignore,
+                style = { position = Position.Absolute }
+            };
             SetBorder(_hotspotMarker, Color.red, 1f);
             _stage.Add(_hotspotMarker);
             stages.Add(_stage);
@@ -190,8 +220,10 @@ namespace Opportunv.LiveCursor.Editor
             stages.Add(tryColumn);
             root.Add(stages);
 
-            _status = new();
-            _status.style.marginTop = 6f;
+            _status = new()
+            {
+                style = { marginTop = 6f }
+            };
             root.Add(_status);
 
             RefreshBackground();
@@ -372,8 +404,9 @@ namespace Opportunv.LiveCursor.Editor
             else
             {
                 var state = _set.GetState(_set.FindState(_player.CurrentState));
-                _status.text = $"{_player.CurrentState.Name}, frame {_player.FrameIndex + 1} of {state.Loop.FrameCount}" +
-                               $", {_player.CursorSize} px";
+                var frame = _player.FrameIndex + 1;
+                _status.text = $"{_player.CurrentState.Name}, frame {frame} of {state.Loop.FrameCount}, " +
+                               $"{_player.CursorSize} px";
             }
 
             for (var i = 0; i < _stateButtons.Count; i++)
@@ -441,18 +474,28 @@ namespace Opportunv.LiveCursor.Editor
 
         private static VisualElement Row()
         {
-            VisualElement row = new();
-            row.style.flexDirection = FlexDirection.Row;
-            row.style.alignItems = Align.Center;
-            row.style.marginTop = 2f;
+            VisualElement row = new()
+            {
+                style =
+                {
+                    flexDirection = FlexDirection.Row,
+                    alignItems = Align.Center,
+                    marginTop = 2f
+                }
+            };
             return row;
         }
 
         private static Label Muted(string text)
         {
-            Label label = new(text);
-            label.style.color = new Color(0.6f, 0.6f, 0.6f);
-            label.style.whiteSpace = WhiteSpace.Normal;
+            Label label = new(text)
+            {
+                style =
+                {
+                    color = new Color(0.6f, 0.6f, 0.6f),
+                    whiteSpace = WhiteSpace.Normal
+                }
+            };
             return label;
         }
 

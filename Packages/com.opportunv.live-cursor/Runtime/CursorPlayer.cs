@@ -11,40 +11,42 @@ namespace Opportunv.LiveCursor
         /// <summary>Raised when a state is entered, after any transition into it has finished.</summary>
         public event Action<CursorStateId> StateEntered;
 
-        /// <summary>The cursor set being played, or <c>null</c>.</summary>
+        /// <summary>Gets the cursor set being played, or <c>null</c>.</summary>
         public CursorSet Set { get; private set; }
 
-        /// <summary>The state currently shown. During a transition this is the state it started from.</summary>
+        /// <summary>Gets the state currently shown. During a transition this is the state it started
+        /// from.</summary>
         public CursorStateId CurrentState => _stateIndex >= 0 ? Set.GetStateId(_stateIndex) : default;
 
-        /// <summary>The state the cursor is heading to: the current state, or where the running transition will
-        /// end.</summary>
+        /// <summary>Gets the state the cursor is heading to: the current state, or where the running transition
+        /// will end.</summary>
         public CursorStateId TargetState => _stateIndex >= 0 ? Set.GetStateId(TargetStateIndex()) : _requestedState;
 
-        /// <summary>The state set with <see cref="SetState(CursorStateId, bool)"/>, shown while no request is
+        /// <summary>Gets the state set with <see cref="SetState(CursorStateId, bool)"/>, shown while no request is
         /// active.</summary>
         public CursorStateId BaseState => _baseState;
 
-        /// <summary>The number of active requests.</summary>
+        /// <summary>Gets the number of active requests.</summary>
         public int ActiveRequestCount => _requests.Count;
 
-        /// <summary>Whether a transition is playing.</summary>
+        /// <summary>Gets a value indicating whether a transition is playing.</summary>
         public bool IsTransitioning => _transitioning;
 
-        /// <summary>The index of the frame shown in the current loop or transition.</summary>
+        /// <summary>Gets the index of the frame shown in the current loop or transition.</summary>
         public int FrameIndex => _frameIndex;
 
-        /// <summary>The baked size in use, in pixels, or 0 when no set is playing.</summary>
+        /// <summary>Gets the baked size in use, in pixels, or 0 when no set is playing.</summary>
         public int CursorSize => _sizeIndex >= 0 ? Set.GetSize(_sizeIndex) : 0;
 
-        /// <summary>Whether any token passed to <see cref="SuppressIdle"/> is still holding the loops.</summary>
+        /// <summary>Gets a value indicating whether any token passed to <see cref="SuppressIdle"/> is still holding the
+        /// loops.</summary>
         public bool IsIdleSuppressed => _idleSuppressors.Count > 0;
 
-        /// <summary>Whether state loops are currently playing.</summary>
+        /// <summary>Gets a value indicating whether state loops are currently playing.</summary>
         public bool IsIdlePlaying => _idleEnabled && _idleSuppressors.Count == 0;
 
-        /// <summary>Whether state loops play. When off, each state shows its first frame; transitions still
-        /// play.</summary>
+        /// <summary>Gets or sets a value indicating whether state loops play. When off, each state shows its first
+        /// frame; transitions still play.</summary>
         public bool IdleEnabled
         {
             get => _idleEnabled;
@@ -89,7 +91,8 @@ namespace Opportunv.LiveCursor
         private Texture2D _appliedTexture;
         private Vector2 _appliedHotspot;
 
-        /// <summary>Creates a player that sends frames to <paramref name="output"/>.</summary>
+        /// <summary>Initializes a new instance of the <see cref="CursorPlayer"/> class that sends frames to
+        /// <paramref name="output"/>.</summary>
         public CursorPlayer(ICursorOutput output)
         {
             _output = output ?? throw new ArgumentNullException(nameof(output));
@@ -335,7 +338,7 @@ namespace Opportunv.LiveCursor
         private void DriveEffective(bool immediate)
         {
             var state = EffectiveState();
-            if (state.IsValid && (state != _requestedState || immediate))
+            if (state.IsValid && state != _requestedState)
             {
                 Drive(state, immediate);
             }
@@ -366,11 +369,6 @@ namespace Opportunv.LiveCursor
             else if (target == _transitionDestination)
             {
                 _queuedState = -1;
-                if (immediate)
-                {
-                    _elapsed = 0f;
-                    CompleteTransition();
-                }
             }
             else if (target == _transitionOrigin && _transition.Reversible)
             {
@@ -381,14 +379,13 @@ namespace Opportunv.LiveCursor
                     StepTransition();
                 }
             }
+            else if (TrySwitchTransition(target))
+            {
+                _queuedState = -1;
+            }
             else
             {
                 _queuedState = target;
-                if (immediate)
-                {
-                    _elapsed = 0f;
-                    CompleteTransition();
-                }
             }
 
             Apply();
@@ -415,10 +412,7 @@ namespace Opportunv.LiveCursor
             }
 
             var transition = Set.GetTransition(index);
-            var count = transition.Clip.FrameCount;
-            var first = transition.IncludesEndpoints ? 1 : 0;
-            var last = transition.IncludesEndpoints ? count - 2 : count - 1;
-            if (last < first)
+            if (!TryGetPlayableRange(transition, out var first, out var last))
             {
                 EnterState(to, keepElapsed);
                 return;
@@ -437,6 +431,51 @@ namespace Opportunv.LiveCursor
             {
                 _elapsed = 0f;
             }
+        }
+
+        private bool TrySwitchTransition(int target)
+        {
+            var index = Set.FindTransition(_transitionOrigin, target, out var reversed);
+            if (index < 0)
+            {
+                return false;
+            }
+
+            var transition = Set.GetTransition(index);
+            if (!TryGetPlayableRange(transition, out var first, out var last))
+            {
+                return false;
+            }
+
+            var offset = Mathf.RoundToInt(TransitionProgress() * (last - first));
+            _transition = transition;
+            _transitionDestination = target;
+            _firstFrame = first;
+            _lastFrame = last;
+            _step = reversed ? -1 : 1;
+            _frameIndex = reversed ? last - offset : first + offset;
+            _frameDuration = StepFrameDuration();
+            return true;
+        }
+
+        private float TransitionProgress()
+        {
+            var span = _lastFrame - _firstFrame;
+            if (span <= 0)
+            {
+                return 0f;
+            }
+
+            var played = _step > 0 ? _frameIndex - _firstFrame : _lastFrame - _frameIndex;
+            return Mathf.Clamp01(played / (float)span);
+        }
+
+        private static bool TryGetPlayableRange(CursorTransition transition, out int first, out int last)
+        {
+            var count = transition.Clip.FrameCount;
+            first = transition.IncludesEndpoints ? 1 : 0;
+            last = transition.IncludesEndpoints ? count - 2 : count - 1;
+            return last >= first;
         }
 
         private void Reverse()

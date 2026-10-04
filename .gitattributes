@@ -18,3 +18,5 @@
 *.gif binary
 *.ttf binary
 *.otf binary
+*.dll binary
+*.p7s binary

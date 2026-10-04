@@ -6,7 +6,7 @@ namespace Opportunv.LiveCursor
     /// Dispose it, or call <see cref="Release"/>, to remove the request.</summary>
     public readonly struct CursorRequest : IDisposable
     {
-        /// <summary>Whether the request is still active.</summary>
+        /// <summary>Gets a value indicating whether the request is still active.</summary>
         public bool IsActive => _player != null && _player.IsRequestActive(_id);
 
         private readonly CursorPlayer _player;

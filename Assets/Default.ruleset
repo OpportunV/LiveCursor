@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RuleSet Name="LiveCursor" ToolsVersion="16.0">
+  <IncludeAll Action="None" />
+
+  <Rules AnalyzerId="StyleCop.Analyzers" RuleNamespace="StyleCop.Analyzers">
+    <!-- One type per file, and the file named after the type. -->
+    <Rule Id="SA1402" Action="Error" />
+    <Rule Id="SA1649" Action="Error" />
+
+    <!-- Members grouped by descending accessibility. -->
+    <Rule Id="SA1202" Action="Warning" />
+
+    <!-- Property summaries read "Gets ..." / "Gets or sets ...". -->
+    <Rule Id="SA1623" Action="Warning" />
+  </Rules>
+</RuleSet>

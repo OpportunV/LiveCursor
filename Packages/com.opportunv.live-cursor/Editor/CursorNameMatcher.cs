@@ -5,23 +5,12 @@ namespace Opportunv.LiveCursor.Editor
 {
     internal static class CursorNameMatcher
     {
-        private static readonly string[] _joiners = { "to", "2", "" };
+        private static readonly string[] _joiners = { "to", "2", string.Empty };
 
-        public static string Normalize(string name)
-        {
-            StringBuilder builder = new(name.Length);
-            foreach (var chr in name)
-            {
-                if (char.IsLetterOrDigit(chr))
-                {
-                    builder.Append(char.ToLowerInvariant(chr));
-                }
-            }
-
-            return builder.ToString();
-        }
-
-        public static bool TryMatchTransition(string clipName, IReadOnlyList<string> stateNames, out string from,
+        public static bool TryMatchTransition(
+            string clipName,
+            IReadOnlyList<string> stateNames,
+            out string from,
             out string to)
         {
             from = null;
@@ -79,6 +68,20 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             return false;
+        }
+
+        private static string Normalize(string name)
+        {
+            StringBuilder builder = new(name.Length);
+            foreach (var chr in name)
+            {
+                if (char.IsLetterOrDigit(chr))
+                {
+                    builder.Append(char.ToLowerInvariant(chr));
+                }
+            }
+
+            return builder.ToString();
         }
     }
 }

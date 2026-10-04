@@ -50,6 +50,66 @@ namespace Dev.Diagnostics
             public IntPtr Bits;
         }
 
+        public static CursorProbeSnapshot Capture()
+        {
+            CursorProbeSnapshot snapshot = new()
+            {
+                SystemMetricWidth = GetSystemMetrics(SmCxCursor)
+            };
+
+            var window = GetActiveWindow();
+            var dpi = window != IntPtr.Zero ? GetDpiForWindow(window) : 0;
+            snapshot.WindowDpi = (int)dpi;
+            snapshot.SystemMetricForDpiWidth = dpi != 0 ? GetSystemMetricsForDpi(SmCxCursor, dpi) : 0;
+
+            uint dataSize = sizeof(int);
+            var result = RegGetValueW(
+                _hkeyCurrentUser,
+                "Control Panel\\Cursors",
+                "CursorBaseSize",
+                RrfRtRegDword,
+                IntPtr.Zero,
+                out var baseSize,
+                ref dataSize);
+            if (result == 0)
+            {
+                snapshot.CursorBaseSize = baseSize;
+            }
+
+            CursorInfo cursorInfo = new()
+            {
+                Size = Marshal.SizeOf<CursorInfo>()
+            };
+            if (GetCursorInfo(ref cursorInfo) &&
+                cursorInfo.Cursor != IntPtr.Zero &&
+                GetIconInfo(cursorInfo.Cursor, out var iconInfo))
+            {
+                snapshot.ActiveHotspotX = iconInfo.HotspotX;
+                snapshot.ActiveHotspotY = iconInfo.HotspotY;
+                var bitmapHandle = iconInfo.Color != IntPtr.Zero ? iconInfo.Color : iconInfo.Mask;
+                if (GetObject(bitmapHandle, Marshal.SizeOf<Bitmap>(), out var bitmap) != 0)
+                {
+                    snapshot.ActiveCursorWidth = bitmap.Width;
+                    snapshot.ActiveCursorHeight = iconInfo.Color != IntPtr.Zero ? bitmap.Height : bitmap.Height / 2;
+                }
+
+                if (iconInfo.Color != IntPtr.Zero)
+                {
+                    DeleteObject(iconInfo.Color);
+                }
+
+                if (iconInfo.Mask != IntPtr.Zero)
+                {
+                    DeleteObject(iconInfo.Mask);
+                }
+            }
+
+            var process = GetCurrentProcess();
+            snapshot.GdiObjects = (int)GetGuiResources(process, GrGdiObjects);
+            snapshot.UserObjects = (int)GetGuiResources(process, GrUserObjects);
+            return snapshot;
+        }
+
         [DllImport("user32.dll")]
         private static extern int GetSystemMetrics(int index);
 
@@ -81,58 +141,14 @@ namespace Dev.Diagnostics
         private static extern IntPtr GetCurrentProcess();
 
         [DllImport("advapi32.dll", CharSet = CharSet.Unicode)]
-        private static extern int RegGetValueW(IntPtr key, string subKey, string valueName, uint flags, IntPtr type, out int data, ref uint dataSize);
-
-        public static CursorProbeSnapshot Capture()
-        {
-            CursorProbeSnapshot snapshot = new()
-            {
-                Valid = true,
-                SystemMetricWidth = GetSystemMetrics(SmCxCursor)
-            };
-
-            var window = GetActiveWindow();
-            var dpi = window != IntPtr.Zero ? GetDpiForWindow(window) : 0;
-            snapshot.WindowDpi = (int)dpi;
-            snapshot.SystemMetricForDpiWidth = dpi != 0 ? GetSystemMetricsForDpi(SmCxCursor, dpi) : 0;
-
-            uint dataSize = sizeof(int);
-            if (RegGetValueW(_hkeyCurrentUser, "Control Panel\\Cursors", "CursorBaseSize", RrfRtRegDword, IntPtr.Zero, out var baseSize, ref dataSize) == 0)
-            {
-                snapshot.CursorBaseSize = baseSize;
-            }
-
-            CursorInfo cursorInfo = new()
-            {
-                Size = Marshal.SizeOf<CursorInfo>()
-            };
-            if (GetCursorInfo(ref cursorInfo) && cursorInfo.Cursor != IntPtr.Zero && GetIconInfo(cursorInfo.Cursor, out var iconInfo))
-            {
-                snapshot.ActiveHotspotX = iconInfo.HotspotX;
-                snapshot.ActiveHotspotY = iconInfo.HotspotY;
-                var bitmapHandle = iconInfo.Color != IntPtr.Zero ? iconInfo.Color : iconInfo.Mask;
-                if (GetObject(bitmapHandle, Marshal.SizeOf<Bitmap>(), out var bitmap) != 0)
-                {
-                    snapshot.ActiveCursorWidth = bitmap.Width;
-                    snapshot.ActiveCursorHeight = iconInfo.Color != IntPtr.Zero ? bitmap.Height : bitmap.Height / 2;
-                }
-
-                if (iconInfo.Color != IntPtr.Zero)
-                {
-                    DeleteObject(iconInfo.Color);
-                }
-
-                if (iconInfo.Mask != IntPtr.Zero)
-                {
-                    DeleteObject(iconInfo.Mask);
-                }
-            }
-
-            var process = GetCurrentProcess();
-            snapshot.GdiObjects = (int)GetGuiResources(process, GrGdiObjects);
-            snapshot.UserObjects = (int)GetGuiResources(process, GrUserObjects);
-            return snapshot;
-        }
+        private static extern int RegGetValueW(
+            IntPtr key,
+            string subKey,
+            string valueName,
+            uint flags,
+            IntPtr type,
+            out int data,
+            ref uint dataSize);
 #else
         public static CursorProbeSnapshot Capture()
         {

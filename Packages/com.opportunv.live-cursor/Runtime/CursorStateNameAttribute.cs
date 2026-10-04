@@ -6,10 +6,11 @@ namespace Opportunv.LiveCursor
     /// project's cursor sets.</summary>
     public sealed class CursorStateNameAttribute : PropertyAttribute
     {
-        /// <summary>Whether the dropdown offers "None", stored as an empty string.</summary>
+        /// <summary>Gets a value indicating whether the dropdown offers "None", stored as an empty string.</summary>
         public bool AllowNone { get; }
 
-        /// <summary>Marks the field; pass <c>true</c> to allow "None".</summary>
+        /// <summary>Initializes a new instance of the <see cref="CursorStateNameAttribute"/> class. Pass <c>true</c> to
+        /// allow "None".</summary>
         public CursorStateNameAttribute(bool allowNone = false)
         {
             AllowNone = allowNone;

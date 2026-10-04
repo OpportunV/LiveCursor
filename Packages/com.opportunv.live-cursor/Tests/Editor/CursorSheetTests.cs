@@ -37,7 +37,11 @@ namespace Opportunv.LiveCursor.Tests.Editor
         [TestCase("Grab-4X2", "Grab", 4, 2, 0)]
         [TestCase("Grab4x2", "Grab", 4, 2, 0)]
         [TestCase("Default_to_Grab 6x1", "Default_to_Grab", 6, 1, 0)]
-        public void TryParseFileName_ReadsLayoutSuffix(string fileName, string expectedName, int columns, int rows,
+        public void TryParseFileName_ReadsLayoutSuffix(
+            string fileName,
+            string expectedName,
+            int columns,
+            int rows,
             int count)
         {
             var parsed = CursorSheetLayout.TryParseFileName(fileName, out var name, out var layout);

@@ -6,13 +6,10 @@ namespace Opportunv.LiveCursor
     /// field; generated state constants provide these for you.</summary>
     public readonly struct CursorStateId : IEquatable<CursorStateId>
     {
-        /// <summary>A hash of the name, used for comparisons.</summary>
-        public int Hash => _hash;
-
-        /// <summary>The state name.</summary>
+        /// <summary>Gets the state name.</summary>
         public string Name => _name ?? string.Empty;
 
-        /// <summary>Whether the id was created from a non-empty name.</summary>
+        /// <summary>Gets a value indicating whether the id was created from a non-empty name.</summary>
         public bool IsValid => _hash != 0;
 
         private const uint FnvOffsetBasis = 2166136261;
@@ -21,7 +18,8 @@ namespace Opportunv.LiveCursor
         private readonly int _hash;
         private readonly string _name;
 
-        /// <summary>Creates an id for the state named <paramref name="name"/>.</summary>
+        /// <summary>Initializes a new instance of the <see cref="CursorStateId"/> struct for the state named
+        /// <paramref name="name"/>.</summary>
         public CursorStateId(string name)
         {
             _name = name;

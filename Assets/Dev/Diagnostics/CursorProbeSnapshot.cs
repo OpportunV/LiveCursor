@@ -12,6 +12,5 @@ namespace Dev.Diagnostics
         public int ActiveHotspotY;
         public int GdiObjects;
         public int UserObjects;
-        public bool Valid;
     }
 }

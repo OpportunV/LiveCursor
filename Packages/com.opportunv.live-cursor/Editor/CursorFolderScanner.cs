@@ -22,7 +22,7 @@ namespace Opportunv.LiveCursor.Editor
             return clips;
         }
 
-        public static bool TryReadPngSize(string path, out int width, out int height)
+        private static bool TryReadPngSize(string path, out int width, out int height)
         {
             width = 0;
             height = 0;
@@ -103,9 +103,9 @@ namespace Opportunv.LiveCursor.Editor
         private static CursorScannedClip CreateClip(string name, string folder, string[] files)
         {
             var clip = ReadClip(name, folder, files);
+            var fileName = Path.GetFileNameWithoutExtension(files[0]);
             if (!clip.CanBeSheet ||
-                !CursorSheetLayout.TryParseFileName(Path.GetFileNameWithoutExtension(files[0]), out var sheetName,
-                    out var layout) ||
+                !CursorSheetLayout.TryParseFileName(fileName, out var sheetName, out var layout) ||
                 !layout.Fits(clip.Width, clip.Height))
             {
                 return clip;
@@ -135,7 +135,8 @@ namespace Opportunv.LiveCursor.Editor
                 else if (frameWidth != width || frameHeight != height)
                 {
                     problem ??=
-                        $"'{Path.GetFileName(files[i])}' is {frameWidth}x{frameHeight}, but the first frame is {width}x{height}.";
+                        $"'{Path.GetFileName(files[i])}' is {frameWidth}x{frameHeight}, but the first frame is " +
+                        $"{width}x{height}.";
                 }
             }
 

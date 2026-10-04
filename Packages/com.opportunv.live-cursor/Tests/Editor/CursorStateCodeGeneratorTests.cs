@@ -19,14 +19,19 @@ namespace Opportunv.LiveCursor.Tests.Editor
         [Test]
         public void Generate_WritesFieldPerStateInsideNamespace()
         {
-            var code = CursorStateCodeGenerator.Generate("CursorStates", "Game.UI", new[] { "Default", "grab hand" },
+            var code = CursorStateCodeGenerator.Generate(
+                "CursorStates",
+                "Game.UI",
+                new[] { "Default", "grab hand" },
                 new[] { "Prism.cursorset" });
 
             Assert.That(code, Does.Contain("namespace Game.UI\n{"));
             Assert.That(code, Does.Contain("    public static class CursorStates\n"));
-            Assert.That(code,
+            Assert.That(
+                code,
                 Does.Contain("        public static readonly CursorStateId Default = new(\"Default\");\n"));
-            Assert.That(code,
+            Assert.That(
+                code,
                 Does.Contain("        public static readonly CursorStateId GrabHand = new(\"grab hand\");\n"));
             Assert.That(code, Does.Contain("Prism.cursorset"));
         }
@@ -34,7 +39,10 @@ namespace Opportunv.LiveCursor.Tests.Editor
         [Test]
         public void Generate_WithoutNamespaceHasNoIndent()
         {
-            var code = CursorStateCodeGenerator.Generate("CursorStates", string.Empty, new[] { "Default" },
+            var code = CursorStateCodeGenerator.Generate(
+                "CursorStates",
+                string.Empty,
+                new[] { "Default" },
                 new[] { "Set.cursorset" });
 
             Assert.That(code, Does.Not.Contain("namespace"));
@@ -44,7 +52,10 @@ namespace Opportunv.LiveCursor.Tests.Editor
         [Test]
         public void Generate_DeduplicatesClashingIdentifiers()
         {
-            var code = CursorStateCodeGenerator.Generate("CursorStates", string.Empty, new[] { "grab-hand", "Grab Hand" },
+            var code = CursorStateCodeGenerator.Generate(
+                "CursorStates",
+                string.Empty,
+                new[] { "grab-hand", "Grab Hand" },
                 new[] { "Set.cursorset" });
 
             Assert.That(code, Does.Contain("GrabHand = new(\"grab-hand\")"));
@@ -54,20 +65,30 @@ namespace Opportunv.LiveCursor.Tests.Editor
         [Test]
         public void Generate_ListsAllStates()
         {
-            var code = CursorStateCodeGenerator.Generate("CursorStates", string.Empty, new[] { "Default", "All" },
+            var code = CursorStateCodeGenerator.Generate(
+                "CursorStates",
+                string.Empty,
+                new[] { "Default", "All" },
                 new[] { "Set.cursorset" });
 
             Assert.That(code, Does.Contain("All2 = new(\"All\")"));
-            Assert.That(code, Does.Contain("IReadOnlyList<CursorStateId> All = new[] { Default, All2 };"));
+            Assert.That(
+                code,
+                Does.Contain("IReadOnlyList<CursorStateId> All = new[]\n    {\n        Default,\n        All2\n    };\n"));
         }
 
         [Test]
         public void Generate_RenamesAllListWhenClassIsNamedAll()
         {
-            var code = CursorStateCodeGenerator.Generate("All", string.Empty, new[] { "Default" },
+            var code = CursorStateCodeGenerator.Generate(
+                "All",
+                string.Empty,
+                new[] { "Default" },
                 new[] { "Set.cursorset" });
 
-            Assert.That(code, Does.Contain("IReadOnlyList<CursorStateId> AllStates = new[] { Default };"));
+            Assert.That(
+                code,
+                Does.Contain("IReadOnlyList<CursorStateId> AllStates = new[]\n    {\n        Default\n    };\n"));
         }
 
         [Test]

@@ -9,15 +9,21 @@ namespace Opportunv.LiveCursor
     [AddComponentMenu("Live Cursor/Cursor Animator")]
     public sealed class CursorAnimator : MonoBehaviour
     {
-        [SerializeField, Tooltip("The cursor set to play.")]
+        [SerializeField]
+        [Tooltip("The cursor set to play.")]
         private CursorSet _cursorSet;
-        [SerializeField, CursorStateName, Tooltip("The state shown when the scene starts.")]
+        [SerializeField]
+        [CursorStateName]
+        [Tooltip("The state shown when the scene starts.")]
         private string _initialState = "Default";
-        [SerializeField, Tooltip("Play each state's loop. When off, states show their first frame.")]
+        [SerializeField]
+        [Tooltip("Play each state's loop. When off, states show their first frame.")]
         private bool _idleEnabled = true;
-        [SerializeField, Tooltip("Show every frame once when a set is assigned, so later changes are instant.")]
+        [SerializeField]
+        [Tooltip("Show every frame once when a set is assigned, so later changes are instant.")]
         private bool _warmOnSetChange;
-        [SerializeField, Min(0)]
+        [SerializeField]
+        [Min(0)]
         [Tooltip("Cursor size in pixels to use instead of the system size. 0 uses the system size.")]
         private int _sizeOverride;
 
@@ -28,20 +34,20 @@ namespace Opportunv.LiveCursor
             remove => _player.StateEntered -= value;
         }
 
-        /// <summary>The player driving the cursor.</summary>
+        /// <summary>Gets the player driving the cursor.</summary>
         public CursorPlayer Player => _player;
 
-        /// <summary>The cursor set being played.</summary>
+        /// <summary>Gets the cursor set being played.</summary>
         public CursorSet CursorSet => _cursorSet;
 
-        /// <summary>The state currently shown. During a transition this is the state it started from.</summary>
+        /// <summary>Gets the state currently shown. During a transition this is the state it started from.</summary>
         public CursorStateId CurrentState => _player.CurrentState;
 
-        /// <summary>The state the cursor is heading to.</summary>
+        /// <summary>Gets the state the cursor is heading to.</summary>
         public CursorStateId TargetState => _player.TargetState;
 
-        /// <summary>Whether state loops play. When off, each state shows its first frame; transitions still
-        /// play.</summary>
+        /// <summary>Gets or sets a value indicating whether state loops play. When off, each state shows its first
+        /// frame; transitions still play.</summary>
         public bool IdleEnabled
         {
             get => _idleEnabled;

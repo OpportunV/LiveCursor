@@ -30,17 +30,19 @@ namespace Opportunv.LiveCursor.Tests.Editor
             return texture;
         }
 
-        public bool TryLoad(CursorFramesDefinition frames, string clipLabel, List<Texture2D> output,
+        public void Load(
+            CursorFramesDefinition frames,
+            string clipLabel,
+            List<Texture2D> output,
             CursorImportReport report)
         {
             if (frames?.folder != null && _clips.TryGetValue(frames.folder, out var clip))
             {
                 output.AddRange(clip);
-                return true;
+                return;
             }
 
             report.Error($"{clipLabel}: no frames.");
-            return false;
         }
 
         public void Dispose()

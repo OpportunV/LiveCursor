@@ -9,15 +9,18 @@ namespace Opportunv.LiveCursor
     {
         [SerializeField] private string _name;
         [SerializeField] private CursorClip _loop;
-        [SerializeField, Min(0f)] private float _loopDelay;
+        [SerializeField]
+        [Min(0f)]
+        private float _loopDelay;
 
-        /// <summary>The state name, as used by <see cref="CursorStateId"/>.</summary>
+        /// <summary>Gets the state name, as used by <see cref="CursorStateId"/>.</summary>
         public string Name => _name;
 
-        /// <summary>The frames played while the state is active.</summary>
+        /// <summary>Gets the frames played while the state is active.</summary>
         public CursorClip Loop => _loop;
 
-        /// <summary>Seconds the first frame is held after entering the state before the loop starts.</summary>
+        /// <summary>Gets the time, in seconds, the first frame is held after entering the state before the loop
+        /// starts.</summary>
         public float LoopDelay => _loopDelay;
 
         internal CursorState(string name, CursorClip loop, float loopDelay)

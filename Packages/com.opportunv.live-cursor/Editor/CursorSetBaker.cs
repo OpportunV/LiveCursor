@@ -72,10 +72,19 @@ namespace Opportunv.LiveCursor.Editor
                 var end = HasHotspot(transition.hotspot)
                     ? ToVector(transition.hotspot)
                     : StateHotspot(definition, IndexOfState(definition, transition.to));
-                var clip = BakeClip($"{transition.from}>{transition.to}", transitionFrames[i],
-                    transition.frameDurationMs, start, end);
-                bakedTransitions[i] = new(transition.from, transition.to, clip, transition.includesEndpoints,
-                    transition.reversible, transition.reverseFrameDurationMs / 1000f);
+                var clip = BakeClip(
+                    $"{transition.from}>{transition.to}",
+                    transitionFrames[i],
+                    transition.frameDurationMs,
+                    start,
+                    end);
+                bakedTransitions[i] = new(
+                    transition.from,
+                    transition.to,
+                    clip,
+                    transition.includesEndpoints,
+                    transition.reversible,
+                    transition.reverseFrameDurationMs / 1000f);
             }
 
             set.Initialize(_sizes, states, bakedTransitions);
@@ -85,11 +94,13 @@ namespace Opportunv.LiveCursor.Editor
         private List<Texture2D> Load(CursorFramesDefinition frames, string label)
         {
             List<Texture2D> output = new();
-            _loader.TryLoad(frames, label, output, _report);
+            _loader.Load(frames, label, output, _report);
             return output;
         }
 
-        private bool ValidateFrames(CursorSetDefinition definition, List<Texture2D>[] stateFrames,
+        private bool ValidateFrames(
+            CursorSetDefinition definition,
+            List<Texture2D>[] stateFrames,
             List<Texture2D>[] transitionFrames)
         {
             var reference = stateFrames[0][0];
@@ -114,7 +125,8 @@ namespace Opportunv.LiveCursor.Editor
                 if (transition.includesEndpoints && transitionFrames[i].Count < 3)
                 {
                     _report.Warning(
-                        $"{TransitionLabel(transition)} has no in-between frames once its endpoints are skipped; it will switch instantly.");
+                        $"{TransitionLabel(transition)} has no in-between frames once its endpoints are skipped; it " +
+                        "will switch instantly.");
                 }
             }
 
@@ -167,12 +179,15 @@ namespace Opportunv.LiveCursor.Editor
                 }
 
                 _report.Error(
-                    $"{label}: frame {i} ('{frame.name}') is {frame.width}x{frame.height}, but every frame must match the {_canvasWidth}x{_canvasHeight} canvas.");
+                    $"{label}: frame {i} ('{frame.name}') is {frame.width}x{frame.height}, " +
+                    $"but every frame must match the {_canvasWidth}x{_canvasHeight} canvas.");
                 return;
             }
         }
 
-        private void CheckEndpoints(CursorSetDefinition definition, List<Texture2D>[] stateFrames,
+        private void CheckEndpoints(
+            CursorSetDefinition definition,
+            List<Texture2D>[] stateFrames,
             List<Texture2D>[] transitionFrames)
         {
             var transitions = definition.transitions ?? Array.Empty<CursorTransitionDefinition>();
@@ -191,19 +206,25 @@ namespace Opportunv.LiveCursor.Editor
                 if (startDifference > 0)
                 {
                     _report.Warning(
-                        $"{TransitionLabel(transition)}: first frame differs from '{transition.from}' frame 0 in {startDifference} pixels; the cursor will jump when the transition starts.");
+                        $"{TransitionLabel(transition)}: first frame differs from '{transition.from}' frame 0 in " +
+                        $"{startDifference} pixels; the cursor will jump when the transition starts.");
                 }
 
                 var endDifference = CursorPixelComparer.CountDifferentPixels(frames[^1], to);
                 if (endDifference > 0)
                 {
                     _report.Warning(
-                        $"{TransitionLabel(transition)}: last frame differs from '{transition.to}' frame 0 in {endDifference} pixels; the cursor will jump when the transition ends.");
+                        $"{TransitionLabel(transition)}: last frame differs from '{transition.to}' frame 0 in " +
+                        $"{endDifference} pixels; the cursor will jump when the transition ends.");
                 }
             }
         }
 
-        private CursorClip BakeClip(string label, List<Texture2D> masters, float frameDurationMs, Vector2 startHotspot,
+        private CursorClip BakeClip(
+            string label,
+            List<Texture2D> masters,
+            float frameDurationMs,
+            Vector2 startHotspot,
             Vector2 endHotspot)
         {
             var frames = new CursorFrame[masters.Count];

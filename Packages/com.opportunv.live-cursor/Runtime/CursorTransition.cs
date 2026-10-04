@@ -12,28 +12,36 @@ namespace Opportunv.LiveCursor
         [SerializeField] private CursorClip _clip;
         [SerializeField] private bool _includesEndpoints;
         [SerializeField] private bool _reversible;
-        [SerializeField, Min(0f)] private float _reverseFrameDuration;
+        [SerializeField]
+        [Min(0f)]
+        private float _reverseFrameDuration;
 
-        /// <summary>The state the transition starts from.</summary>
+        /// <summary>Gets the state the transition starts from.</summary>
         public string From => _from;
 
-        /// <summary>The state the transition ends in.</summary>
+        /// <summary>Gets the state the transition ends in.</summary>
         public string To => _to;
 
-        /// <summary>The transition frames, in forward order.</summary>
+        /// <summary>Gets the transition frames, in forward order.</summary>
         public CursorClip Clip => _clip;
 
-        /// <summary>Whether the first and last frames repeat the first frames of the two states and are skipped during
-        /// playback.</summary>
+        /// <summary>Gets a value indicating whether the first and last frames repeat the first frames of the two states
+        /// and are skipped during playback.</summary>
         public bool IncludesEndpoints => _includesEndpoints;
 
-        /// <summary>Whether the transition also plays backwards for the opposite direction.</summary>
+        /// <summary>Gets a value indicating whether the transition also plays backwards for the opposite
+        /// direction.</summary>
         public bool Reversible => _reversible;
 
-        /// <summary>Seconds each frame is shown when playing backwards.</summary>
+        /// <summary>Gets the time, in seconds, each frame is shown when playing backwards.</summary>
         public float ReverseFrameDuration => _reverseFrameDuration > 0f ? _reverseFrameDuration : _clip.FrameDuration;
 
-        internal CursorTransition(string from, string to, CursorClip clip, bool includesEndpoints, bool reversible,
+        internal CursorTransition(
+            string from,
+            string to,
+            CursorClip clip,
+            bool includesEndpoints,
+            bool reversible,
             float reverseFrameDuration)
         {
             _from = from;

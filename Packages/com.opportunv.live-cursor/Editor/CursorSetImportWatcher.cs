@@ -7,8 +7,11 @@ namespace Opportunv.LiveCursor.Editor
     {
         public static event Action<string> Imported;
 
-        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
-            string[] movedAssets, string[] movedFromAssetPaths)
+        private static void OnPostprocessAllAssets(
+            string[] importedAssets,
+            string[] deletedAssets,
+            string[] movedAssets,
+            string[] movedFromAssetPaths)
         {
             if (Imported == null)
             {

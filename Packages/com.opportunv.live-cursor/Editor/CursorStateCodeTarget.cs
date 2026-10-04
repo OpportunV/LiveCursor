@@ -13,11 +13,11 @@ namespace Opportunv.LiveCursor.Editor
 
         public List<string> SetPaths { get; } = new();
 
-        public List<List<string>> SetStates { get; } = new();
-
         public List<string> StateNames { get; } = new();
 
         public string FullName => string.IsNullOrEmpty(Namespace) ? ClassName : $"{Namespace}.{ClassName}";
+
+        private readonly List<List<string>> _setStates = new();
 
         public CursorStateCodeTarget(string codePath, string className, string @namespace)
         {
@@ -44,12 +44,12 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             SetPaths.Add(setPath);
-            SetStates.Add(states);
+            _setStates.Add(states);
         }
 
         public List<string> MissingStates(int setIndex)
         {
-            return StateNames.Where(stateName => !SetStates[setIndex].Contains(stateName)).ToList();
+            return StateNames.Where(stateName => !_setStates[setIndex].Contains(stateName)).ToList();
         }
     }
 }

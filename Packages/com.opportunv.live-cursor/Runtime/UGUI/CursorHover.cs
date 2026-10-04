@@ -10,16 +10,23 @@ namespace Opportunv.LiveCursor.UGUI
     public sealed class CursorHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler,
         IPointerUpHandler
     {
-        [SerializeField, Tooltip("The animator to use. When empty, the first one in the scene is used.")]
+        [SerializeField]
+        [Tooltip("The animator to use. When empty, the first one in the scene is used.")]
         private CursorAnimator _animator;
-        [SerializeField, CursorStateName, Tooltip("The state shown while the pointer is over this object.")]
+        [SerializeField]
+        [CursorStateName]
+        [Tooltip("The state shown while the pointer is over this object.")]
         private string _state;
-        [SerializeField, CursorStateName(true), Tooltip("The state shown while the left button is held. Optional.")]
+        [SerializeField]
+        [CursorStateName(true)]
+        [Tooltip("The state shown while the left button is held. Optional.")]
         private string _pressedState;
-        [SerializeField, Tooltip("Requests with a higher priority win over this one.")]
+        [SerializeField]
+        [Tooltip("Requests with a higher priority win over this one.")]
         private int _priority;
 
-        /// <summary>The animator to make requests on. When empty, the first one found in the scene is used.</summary>
+        /// <summary>Gets or sets the animator to make requests on. When empty, the first one found in the scene is
+        /// used.</summary>
         public CursorAnimator Animator
         {
             get => _animator;
@@ -30,10 +37,10 @@ namespace Opportunv.LiveCursor.UGUI
             }
         }
 
-        /// <summary>Whether the hover request is active.</summary>
+        /// <summary>Gets a value indicating whether the hover request is active.</summary>
         public bool IsHovered => _hover.IsActive;
 
-        /// <summary>Whether the pressed request is active.</summary>
+        /// <summary>Gets a value indicating whether the pressed request is active.</summary>
         public bool IsPressed => _press.IsActive;
 
         private CursorStateId _stateId;
@@ -42,7 +49,10 @@ namespace Opportunv.LiveCursor.UGUI
         private CursorRequest _press;
 
         /// <summary>Sets the animator, states and priority from code.</summary>
-        public void Configure(CursorAnimator animator, CursorStateId state, CursorStateId pressedState = default,
+        public void Configure(
+            CursorAnimator animator,
+            CursorStateId state,
+            CursorStateId pressedState = default,
             int priority = 0)
         {
             ReleaseAll();

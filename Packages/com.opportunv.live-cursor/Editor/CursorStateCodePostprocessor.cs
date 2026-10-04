@@ -36,7 +36,8 @@ namespace Opportunv.LiveCursor.Editor
                          target.Namespace != (definition.code.@namespace ?? string.Empty))
                 {
                     Debug.LogWarning(
-                        $"[Live Cursor] '{assetPath}' writes state constants to '{codePath}' with a different class name or namespace; using {target.FullName}.");
+                        $"[Live Cursor] '{assetPath}' writes state constants to '{codePath}' with a different class " +
+                        $"name or namespace; using {target.FullName}.");
                 }
 
                 target.Add(assetPath, definition);
@@ -46,7 +47,7 @@ namespace Opportunv.LiveCursor.Editor
             return targets;
         }
 
-        public static void Regenerate(string codePath)
+        private static void Regenerate(string codePath)
         {
             var target = FindTargets().Find(candidate => candidate.CodePath == codePath);
             if (target == null || !CursorStateCodeGenerator.IsValidIdentifier(target.ClassName))
@@ -63,7 +64,10 @@ namespace Opportunv.LiveCursor.Editor
             }
 
             sources.Sort(StringComparer.Ordinal);
-            var code = CursorStateCodeGenerator.Generate(target.ClassName, target.Namespace, target.StateNames,
+            var code = CursorStateCodeGenerator.Generate(
+                target.ClassName,
+                target.Namespace,
+                target.StateNames,
                 sources);
             if (File.Exists(codePath) && File.ReadAllText(codePath) == code)
             {
@@ -75,8 +79,11 @@ namespace Opportunv.LiveCursor.Editor
             AssetDatabase.ImportAsset(codePath);
         }
 
-        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets,
-            string[] movedAssets, string[] movedFromAssetPaths)
+        private static void OnPostprocessAllAssets(
+            string[] importedAssets,
+            string[] deletedAssets,
+            string[] movedAssets,
+            string[] movedFromAssetPaths)
         {
             HashSet<string> codePaths = new(StringComparer.Ordinal);
             foreach (var assetPath in importedAssets)
@@ -112,7 +119,9 @@ namespace Opportunv.LiveCursor.Editor
 
                 var setPath = target.SetPaths[i];
                 Debug.LogWarning(
-                    $"[Live Cursor] '{Path.GetFileName(setPath)}' shares {target.FullName} but has no {string.Join(", ", missing)} state; setting it will be ignored while this set is active.",
+                    $"[Live Cursor] '{Path.GetFileName(setPath)}' shares {target.FullName} but has no " +
+                    $"{string.Join(", ", missing)} state; setting it will be ignored while this set is " +
+                    "active.",
                     AssetDatabase.LoadMainAssetAtPath(setPath));
             }
         }

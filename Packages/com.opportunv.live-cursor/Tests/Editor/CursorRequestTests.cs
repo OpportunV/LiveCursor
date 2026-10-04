@@ -189,16 +189,18 @@ namespace Opportunv.LiveCursor.Tests.Editor
             _player.Request(_grab).Dispose();
             _player.Tick(1f);
 
-            Assert.That(() =>
-            {
-                var hover = _player.Request(_grab);
-                _player.Tick(TransitionFrame);
-                var press = _player.Request(_dragging, 1, true);
-                _player.Tick(TransitionFrame);
-                press.Release(true);
-                hover.Dispose();
-                _player.Tick(1f);
-            }, Is.Not.AllocatingGCMemory());
+            Assert.That(
+                () =>
+                {
+                    var hover = _player.Request(_grab);
+                    _player.Tick(TransitionFrame);
+                    var press = _player.Request(_dragging, 1, true);
+                    _player.Tick(TransitionFrame);
+                    press.Release(true);
+                    hover.Dispose();
+                    _player.Tick(1f);
+                },
+                Is.Not.AllocatingGCMemory());
         }
     }
 }

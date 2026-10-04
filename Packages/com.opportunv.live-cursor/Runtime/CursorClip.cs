@@ -8,12 +8,14 @@ namespace Opportunv.LiveCursor
     public sealed class CursorClip
     {
         [SerializeField] private CursorFrame[] _frames;
-        [SerializeField, Min(0.001f)] private float _frameDuration;
+        [SerializeField]
+        [Min(0.001f)]
+        private float _frameDuration;
 
-        /// <summary>The number of frames.</summary>
+        /// <summary>Gets the number of frames.</summary>
         public int FrameCount => _frames?.Length ?? 0;
 
-        /// <summary>Seconds each frame is shown.</summary>
+        /// <summary>Gets the time, in seconds, each frame is shown.</summary>
         public float FrameDuration => _frameDuration;
 
         internal CursorClip(CursorFrame[] frames, float frameDuration)

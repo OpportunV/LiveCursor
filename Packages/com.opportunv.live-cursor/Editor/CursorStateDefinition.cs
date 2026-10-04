@@ -1,5 +1,9 @@
-using System;
 // ReSharper disable InconsistentNaming
+
+#pragma warning disable SA1307
+#pragma warning disable SA1401
+
+using System;
 
 namespace Opportunv.LiveCursor.Editor
 {
@@ -13,3 +17,5 @@ namespace Opportunv.LiveCursor.Editor
         public int[] hotspot;
     }
 }
+#pragma warning restore SA1307
+#pragma warning restore SA1401
