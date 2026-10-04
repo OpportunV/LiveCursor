@@ -1,5 +1,7 @@
 # Live Cursor
 
+[![openupm](https://img.shields.io/npm/v/com.opportunv.live-cursor?label=openupm&registry_uri=https://package.openupm.com)](https://openupm.com/packages/com.opportunv.live-cursor/)
+
 ![Live Cursor](Tools/Branding/social-preview.png)
 
 Animated hardware (OS) cursors for Unity with zero added input lag: looping cursor states, authored transitions

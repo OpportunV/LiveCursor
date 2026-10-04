@@ -156,6 +156,10 @@ dotnet_style_require_accessibility_modifiers = always:error
 
 [Assets/Packages/**.cs]
 generated_code = true
+[Packages/com.unity.asset-store-tools/**.cs]
+generated_code = true
+[Assets/AssetStoreTools/**.cs]
+generated_code = true
 [**/*.Designer.cs]
 generated_code = true
 

@@ -38,3 +38,8 @@ crashlytics-build.properties
 
 .DS_Store
 Thumbs.db
+
+# Asset Store Publishing Tools: installed locally by the publisher, not part of the project.
+/Packages/com.unity.asset-store-tools/
+/Assets/AssetStoreTools/
+/Assets/AssetStoreTools.meta
